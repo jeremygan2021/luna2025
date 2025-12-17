@@ -21,7 +21,7 @@ IMAGE_NAME="luna_phone_server"              # Docker镜像名称
 IMAGE_TAG="latest"                     # Docker镜像标签
 CONTAINER_NAME="luna_phone_server-container"       # 容器名称
 LOCAL_PORT="3031"                      # 本地端口
-CONTAINER_PORT="3031"                  # 容器端口
+CONTAINER_PORT="3000"                  # 容器端口
 TAR_FILE="${IMAGE_NAME}-${IMAGE_TAG}.tar"  # 压缩包文件名
 
 # 架构相关变量
