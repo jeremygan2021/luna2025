@@ -1,0 +1,103 @@
+:root {
+  --mac-black: #000000;
+  --mac-white: #ffffff;
+  --mac-gray: #aaaaaa; /* For disabled states */
+  --mac-border: 2px solid var(--mac-black);
+  --mac-font: 'Courier New', Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--mac-font);
+  background-color: var(--mac-gray);
+  /* Dithering pattern */
+  background-image: 
+    linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000),
+    linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000);
+  background-size: 4px 4px;
+  background-position: 0 0, 2px 2px;
+  color: var(--mac-black);
+  overflow: hidden; /* Prevent scrolling on body, handle in windows */
+  -webkit-font-smoothing: none;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 16px;
+  background: var(--mac-white);
+  border-left: var(--mac-border);
+}
+
+::-webkit-scrollbar-thumb {
+  background: url('data:image/svg+xml;utf8,<svg width="4" height="4" viewBox="0 0 4 4" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="2" height="2" fill="black"/><rect x="2" y="2" width="2" height="2" fill="black"/></svg>');
+  border: var(--mac-border);
+}
+
+/* Utilities */
+.pixel-border {
+  border: var(--mac-border);
+  box-shadow: 4px 4px 0px 0px var(--mac-black);
+}
+
+.mac-btn {
+  background: var(--mac-white);
+  border: var(--mac-border);
+  font-family: var(--mac-font);
+  padding: 8px 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px 0px var(--mac-black);
+  transition: all 0.1s;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+.mac-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+  background: var(--mac-black);
+  color: var(--mac-white);
+}
+
+.mac-input {
+  border: var(--mac-border);
+  padding: 8px;
+  font-family: var(--mac-font);
+  font-size: 16px;
+  outline: none;
+  background: var(--mac-white);
+}
+
+.mac-input:focus {
+  background: #eee;
+}
+
+/* Snow Effect */
+.snowflake {
+  position: absolute;
+  top: -10px;
+  width: 4px;
+  height: 4px;
+  background: white;
+  animation: fall linear infinite;
+}
+
+@keyframes fall {
+  to {
+    transform: translateY(100vh);
+  }
+}
