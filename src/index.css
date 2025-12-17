@@ -3,11 +3,21 @@
   --mac-white: #ffffff;
   --mac-gray: #aaaaaa; /* For disabled states */
   --mac-border: 2px solid var(--mac-black);
-  --mac-font: 'Courier New', Courier, monospace;
+  --mac-font: 'Chicago', 'Courier New', Courier, monospace;
+}
+
+/* Typography */
+@font-face {
+  font-family: 'Chicago';
+  src: local('Chicago'), url('https://fonts.cdnfonts.com/s/16086/ChicagoFLF.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
 }
 
 * {
   box-sizing: border-box;
+  -webkit-touch-callout: none; /* Prevent long press menu on mobile */
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight */
 }
 
 body {
@@ -29,10 +39,19 @@ body {
 #root {
   width: 100vw;
   height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   position: relative;
+}
+
+/* Animations */
+@keyframes zoomIn {
+  from {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Scrollbar styling */
@@ -101,3 +120,113 @@ body {
     transform: translateY(100vh);
   }
 }
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .mac-btn {
+    padding: 12px 16px; /* Larger touch targets */
+  }
+
+  .mac-input {
+    padding: 12px;
+  }
+  
+  /* Hide desktop icon containers on mobile */
+  .desktop-icons-right, .desktop-icons-left {
+    display: none !important;
+  }
+  
+  /* Show mobile grid */
+  .mobile-icons-grid {
+    display: flex !important;
+    position: absolute;
+    top: 40px; /* Clear the menu bar */
+    left: 10px;
+    right: 10px;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: flex-start;
+    z-index: 1;
+  }
+
+  /* Increase spacing in TodoList */
+  .todo-item {
+    padding: 12px 0 !important;
+  }
+
+  /* Menu Bar Optimizations */
+  .menu-bar {
+    padding: 0 2px !important;
+  }
+  
+  .menu-bar-left {
+    gap: 0px !important;
+  }
+  
+  .menu-item-trigger {
+    padding: 0 6px !important;
+    font-size: 12px !important;
+  }
+
+  .menu-bar-right {
+    gap: 4px !important;
+  }
+
+  .menu-hd {
+    display: none !important;
+  }
+}
+
+/* Animations */
+@keyframes zoomIn {
+  from {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes minimize {
+  from {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.1) translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes maximize {
+  from {
+    transform: scale(0.1) translateY(100vh);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Button active state animation for more feedback */
+.mac-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+  background: var(--mac-black);
+  color: var(--mac-white);
+  /* Add a small vibration if supported via JS, but visually: */
+  outline: 2px solid var(--mac-gray);
+}
+
+/* Window responsiveness */
+@media (max-width: 600px) {
+  .pixel-border {
+     width: 95% !important;
+     max-height: 90vh;
+     transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+}
+

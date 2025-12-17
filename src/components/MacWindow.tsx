@@ -10,7 +10,17 @@ interface MacWindowProps {
 
 export const MacWindow: React.FC<MacWindowProps> = ({ title, children, className, onClose }) => {
   return (
-    <div className={classNames('pixel-border bg-white flex flex-col', className)} style={{ background: 'var(--mac-white)', maxWidth: '100%', width: '600px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+    <div className={classNames('pixel-border bg-white flex flex-col', className)} style={{ 
+      background: 'var(--mac-white)', 
+      maxWidth: '100%', 
+      width: '600px', 
+      maxHeight: '90vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      // Mobile adaptation is handled in CSS class 'pixel-border' media query, 
+      // but inline styles might override. Let's rely on CSS mostly or ensure max-width is responsive.
+      margin: '0 auto' 
+    }}>
       <div className="title-bar" style={{ 
         background: 'var(--mac-black)', 
         color: 'var(--mac-white)', 

@@ -13,15 +13,15 @@ const PORT = process.env.PORT || 3000;
 app.use('/api', createProxyMiddleware({
   target: 'http://luna.quant-speed.com',
   changeOrigin: true,
-  pathRewrite: {
-    // Keep /api prefix if the target expects it, or remove it if not.
-    // Based on the curl example: http://luna.quant-speed.com/api/todos/
-    // It seems the target HAS /api. So we don't need to rewrite path if we forward /api...
-    // But wait, if I request /api/todos, it goes to target/api/todos. Correct.
-  },
+  pathRewrite: { '^/': '/api/' }, // Re-add /api prefix that Express strips
   onProxyReq: (proxyReq, req, res) => {
-    // Optional: Log proxy requests
-    // console.log(`Proxying ${req.method} ${req.path} to ${proxyReq.host}`);
+    // Log the actual path being requested on the target
+    console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
+  },
+  // Debug: log errors
+  onError: (err, req, res) => {
+    console.error('Proxy Error:', err);
+    res.status(500).send('Proxy Error');
   }
 }));
 

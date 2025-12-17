@@ -35,6 +35,11 @@ export const TodoItem: React.FC<TodoItemProps> = ({ todo, onToggle, onDelete }) 
             {todo.description}
           </div>
         )}
+        {todo.due_date && (
+            <div style={{ fontSize: '10px', marginTop: '2px', color: '#666' }}>
+                Due: {new Date(todo.due_date).toLocaleString()}
+            </div>
+        )}
       </div>
       <button 
         onClick={() => onDelete(todo.id)}

@@ -1,126 +1,246 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { SplashScreen } from './components/SplashScreen';
-import { MacWindow } from './components/MacWindow';
-import { AddTodo } from './components/AddTodo';
-import { TodoList } from './components/TodoList';
-import { todoApi, type Todo } from './services/api';
 import { useLanguage } from './contexts/LanguageContext';
+import { useSound } from './contexts/SoundContext';
+import { MenuBar } from './components/MenuBar';
+import { DesktopIcon } from './components/DesktopIcon';
+import { FolderIcon, TrashIcon, DiskIcon, AppIcon, SnakeIcon, WeatherIcon } from './components/Icons';
+import { TodoApp } from './components/apps/TodoApp';
+import { SnakeGame } from './components/apps/SnakeGame';
+import { WeatherApp } from './components/apps/WeatherApp';
+import { MacPaintApp } from './components/apps/MacPaintApp';
+import { MacWriteApp } from './components/apps/MacWriteApp';
+import { TrashApp } from './components/apps/TrashApp';
+import { SuckesApp } from './components/apps/SuckesApp';
+import { PlaceholderApp } from './components/apps/PlaceholderApp';
 
 function App() {
-  const { t, toggleLanguage } = useLanguage();
+  const { t } = useLanguage();
+  const { playClick } = useSound();
   const [showSplash, setShowSplash] = useState(true);
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [skip] = useState(0);
-  const [limit] = useState(100);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLVideoElement>(null);
 
-  const fetchTodos = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await todoApi.getTodos(skip, limit);
-      setTodos(data);
-    } catch (error) {
-      console.error('Failed to fetch todos', error);
-      // Optional: Show error in UI
-    } finally {
-      setLoading(false);
-    }
-  }, [skip, limit]);
-
-  useEffect(() => {
-    if (!showSplash) {
-      fetchTodos();
-    }
-  }, [showSplash, fetchTodos]);
+  // Desktop Icons state
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  
+  // Window Management State
+  const [activeApp, setActiveApp] = useState<string | null>('todo'); // Default to Todo app open
 
   const handleEnter = () => {
+    playClick();
     setShowSplash(false);
+    // Play music when entering app
+    setTimeout(() => {
+        if (audioRef.current) {
+            audioRef.current.play().then(() => {
+                setIsPlaying(true);
+            }).catch(e => {
+                console.log("Autoplay blocked or failed", e);
+            });
+        }
+    }, 100);
   };
 
-  const handleAddTodo = async (title: string, description: string) => {
-    try {
-      const newTodo = await todoApi.createTodo({
-        title,
-        description,
-        device_id: '1' // Hardcoded as per requirement
-      });
-      // Prepend to list or re-fetch. Let's prepend.
-      setTodos(prev => [newTodo, ...prev]);
-    } catch (error) {
-      console.error('Failed to create todo', error);
-      alert(t('createError'));
+  const toggleMusic = () => {
+    playClick();
+    if (audioRef.current) {
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
     }
   };
 
-  const handleToggleTodo = async (id: number, isCompleted: boolean) => {
-    // Optimistic update
-    setTodos(prev => prev.map(t => t.id === id ? { ...t, is_completed: isCompleted } : t));
-    
-    try {
-      if (isCompleted) {
-        await todoApi.completeTodo(id);
-      } else {
-        await todoApi.incompleteTodo(id);
-      }
-      // Ideally update with server response to get accurate timestamps
-      const updated = await todoApi.getTodo(id);
-      setTodos(prev => prev.map(t => t.id === id ? updated : t));
-    } catch (error) {
-      console.error('Failed to update todo', error);
-      // Revert on failure
-      setTodos(prev => prev.map(t => t.id === id ? { ...t, is_completed: !isCompleted } : t));
-    }
-  };
-
-  const handleDeleteTodo = async (id: number) => {
-    if (!window.confirm(t('confirmDelete'))) return;
-    
-    // Optimistic update
-    const previousTodos = todos;
-    setTodos(prev => prev.filter(t => t.id !== id));
-
-    try {
-      await todoApi.deleteTodo(id);
-    } catch (error) {
-      console.error('Failed to delete todo', error);
-      setTodos(previousTodos);
-    }
-  };
-
-  if (showSplash) {
-    return <SplashScreen onEnter={handleEnter} />;
+  const handleIconClick = (id: string) => {
+    playClick();
+    setSelectedIcon(id);
   }
 
+  const handleIconDoubleClick = (id: string) => {
+    playClick();
+    setActiveApp(id);
+  }
+
+  const closeApp = () => {
+    playClick();
+    setActiveApp(null);
+  }
+
+  // Refactored Icon Lists
+  // Mobile: Prioritize working apps and generic ones
+  const mobileIcons = [
+    { id: 'todo', label: t('todo'), icon: <AppIcon /> },
+    { id: 'snake', label: t('snake'), icon: <SnakeIcon /> },
+    { id: 'weather', label: t('weather'), icon: <WeatherIcon /> },
+    { id: 'macpaint', label: t('macpaint'), icon: <AppIcon /> },
+    { id: 'macwrite', label: t('macwrite'), icon: <AppIcon /> },
+    { id: 'suckes', label: t('suckes'), icon: <FolderIcon /> },
+    { id: 'trash', label: t('trash'), icon: <TrashIcon /> },
+  ];
+
+  const desktopIconsLeft = [
+    { id: 'macpaint', label: t('macpaint'), icon: <AppIcon /> },
+    { id: 'macwrite', label: t('macwrite'), icon: <AppIcon /> },
+    { id: 'suckes', label: t('suckes'), icon: <FolderIcon /> },
+    { id: 'diet', label: t('diet'), icon: <FolderIcon /> },
+    { id: 'frash', label: t('frash'), icon: <FolderIcon /> },
+    { id: 'ampow', label: t('ampow'), icon: <DiskIcon /> },
+  ];
+
+  const desktopIconsRight = [
+    { id: 'hd', label: t('hd'), icon: <DiskIcon /> },
+    { id: 'todo', label: t('todo'), icon: <AppIcon /> }, 
+    { id: 'snake', label: t('snake'), icon: <SnakeIcon /> },
+    { id: 'weather', label: t('weather'), icon: <WeatherIcon /> },
+    { id: 'finder', label: t('finder'), icon: <FolderIcon /> },
+    { id: 'trash', label: t('trash'), icon: <TrashIcon /> },
+  ];
+
+  const renderActiveApp = () => {
+    if (!activeApp) return null;
+
+    const commonProps = { onClose: closeApp };
+
+    switch (activeApp) {
+      case 'todo':
+        return <TodoApp {...commonProps} isPlaying={isPlaying} toggleMusic={toggleMusic} />;
+      case 'snake':
+        return <SnakeGame {...commonProps} />;
+      case 'weather':
+        return <WeatherApp {...commonProps} />;
+      case 'macpaint':
+        return <MacPaintApp {...commonProps} />;
+      case 'macwrite':
+        return <MacWriteApp {...commonProps} />;
+      case 'trash':
+        return <TrashApp {...commonProps} />;
+      case 'suckes':
+        return <SuckesApp {...commonProps} />;
+      default: {
+        // Find label for title
+        const allIcons = [...mobileIcons, ...desktopIconsLeft, ...desktopIconsRight];
+        const icon = allIcons.find(i => i.id === activeApp);
+        return <PlaceholderApp title={icon?.label || 'Application'} {...commonProps} />;
+      }
+    }
+  };
+
   return (
-    <div style={{ width: '100%', padding: '16px', display: 'flex', justifyContent: 'center' }}>
-      <MacWindow title={t('windowTitle')}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-            <button className="mac-btn" onClick={toggleLanguage} style={{ padding: '4px 8px', fontSize: '12px' }}>
-                {t('toggleLang')}
-            </button>
-        </div>
+    <>
+      <video 
+        ref={audioRef} 
+        src="https://tangledup-ai-staging.oss-cn-shanghai.aliyuncs.com/Video/marry%20christmas%20lawrence.mp4" 
+        loop 
+        style={{ display: 'none' }} 
+      />
+      {showSplash ? (
+        <SplashScreen onEnter={handleEnter} />
+      ) : (
+        <div style={{ 
+          width: '100vw', 
+          height: '100vh', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          overflow: 'hidden' 
+        }}>
+          <MenuBar />
+          
+          <div style={{ 
+            flex: 1, 
+            position: 'relative', 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            paddingTop: '28px' // Menu bar height
+          }}>
+            {/* Mobile Icons Grid - Visible only on mobile via CSS */}
+            <div className="mobile-icons-grid" style={{
+               display: 'none', // Controlled by CSS media query usually, but we'll enforce with class
+            }}>
+               {mobileIcons.map(icon => (
+                <DesktopIcon 
+                  key={icon.id}
+                  icon={icon.icon}
+                  label={icon.label}
+                  selected={selectedIcon === icon.id}
+                  onClick={() => {
+                      handleIconClick(icon.id);
+                      handleIconDoubleClick(icon.id);
+                  }}
+                />
+              ))}
+            </div>
 
-        <AddTodo onAdd={handleAddTodo} />
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <span style={{ fontSize: '12px' }}>{todos.length} {t('items')}</span>
-          <button className="mac-btn" onClick={fetchTodos} style={{ padding: '4px 8px', fontSize: '12px' }}>
-            {t('refresh')}
-          </button>
-        </div>
+            {/* Desktop Left Icons */}
+            <div className="desktop-icons-left" style={{ 
+              position: 'absolute', 
+              left: '16px', 
+              top: '16px', 
+              display: 'flex', 
+              flexDirection: 'column',
+              zIndex: 1,
+              maxHeight: 'calc(100vh - 60px)',
+              flexWrap: 'wrap',
+              alignContent: 'flex-start'
+            }}>
+              {desktopIconsLeft.map(icon => (
+                <DesktopIcon 
+                  key={icon.id}
+                  icon={icon.icon}
+                  label={icon.label}
+                  selected={selectedIcon === icon.id}
+                  onClick={() => handleIconClick(icon.id)}
+                  // Double click handled via logic or just click for now
+                />
+              ))}
+            </div>
 
-        <TodoList 
-          todos={todos} 
-          onToggle={handleToggleTodo} 
-          onDelete={handleDeleteTodo} 
-          loading={loading}
-        />
-        
-        <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '10px' }}>
-          {t('footer')}
+            {/* Desktop Right Icons */}
+            <div className="desktop-icons-right" style={{ 
+              position: 'absolute', 
+              right: '16px', 
+              top: '16px', 
+              display: 'flex', 
+              flexDirection: 'column',
+              zIndex: 1,
+              maxHeight: 'calc(100vh - 60px)',
+              flexWrap: 'wrap',
+              alignContent: 'flex-start'
+            }}>
+              {desktopIconsRight.map(icon => (
+                <DesktopIcon 
+                  key={icon.id}
+                  icon={icon.icon}
+                  label={icon.label}
+                  selected={selectedIcon === icon.id}
+                  onClick={() => {
+                      handleIconClick(icon.id);
+                      handleIconDoubleClick(icon.id);
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Central Window */}
+            <div style={{ 
+              zIndex: 10, 
+              width: '100%', 
+              maxWidth: '600px', 
+              padding: '0 16px',
+              animation: activeApp ? 'zoomIn 0.3s ease-out' : 'none',
+              display: activeApp ? 'flex' : 'none',
+              flexDirection: 'column',
+              maxHeight: 'calc(100vh - 40px)' // Ensure it fits on screen
+            }}>
+              {renderActiveApp()}
+            </div>
+          </div>
         </div>
-      </MacWindow>
-    </div>
+      )}
+    </>
   );
 }
 
