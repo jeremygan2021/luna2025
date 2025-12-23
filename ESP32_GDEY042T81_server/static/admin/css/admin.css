@@ -1,0 +1,346 @@
+/* 管理后台样式 */
+
+/* 边框颜色样式 */
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+/* 卡片阴影 */
+.shadow {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+/* 文本颜色 */
+.text-xs {
+    font-size: 0.7rem;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+/* 卡片悬停效果 */
+.card:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+/* 按钮悬停效果 */
+.btn:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+/* 表格样式 */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #5a5c69;
+    background-color: #f8f9fc;
+}
+
+.table td {
+    font-size: 0.85rem;
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+/* 徽章样式 */
+.badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* 表单样式 */
+.form-control:focus {
+    border-color: #bac8f3;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.form-select:focus {
+    border-color: #bac8f3;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+/* 导航栏样式 */
+.navbar-brand {
+    font-weight: 700;
+}
+
+.nav-link {
+    font-weight: 500;
+}
+
+.nav-link.active {
+    font-weight: 700;
+}
+
+/* 页面标题样式 */
+.h2 {
+    font-weight: 700;
+    color: #5a5c69;
+}
+
+/* 卡片标题样式 */
+.card-header {
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.card-header h6 {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #5a5c69;
+}
+
+/* 预警框样式 */
+.alert {
+    border: none;
+    border-radius: 0.35rem;
+    font-size: 0.85rem;
+}
+
+/* 图片预览样式 */
+.img-preview {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 0.25rem;
+    padding: 0.25rem;
+}
+
+/* 加载动画 */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.8rem;
+    }
+    
+    .btn-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .btn-toolbar .btn {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* 状态指示器 */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-online {
+    background-color: #1cc88a;
+}
+
+.status-offline {
+    background-color: #e74a3b;
+}
+
+.status-disabled {
+    background-color: #858796;
+}
+
+/* 设备卡片样式 */
+.device-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #4e73df;
+}
+
+.device-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* 内容卡片样式 */
+.content-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #36b9cc;
+}
+
+.content-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* 图片上传区域样式 */
+.upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 0.35rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+    border-color: #4e73df;
+    background-color: #f8f9fc;
+}
+
+.upload-area.dragover {
+    border-color: #4e73df;
+    background-color: #f8f9fc;
+}
+
+/* 进度条样式 */
+.progress {
+    height: 0.5rem;
+}
+
+/* 时间线样式 */
+.timeline {
+    position: relative;
+    padding: 0;
+    list-style: none;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 30px;
+    height: 100%;
+    width: 2px;
+    background: #e3e6f0;
+}
+
+.timeline-item {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.timeline-item:before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 24px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4e73df;
+    border: 2px solid #fff;
+    z-index: 1;
+}
+
+/* 统计卡片动画 */
+.stat-card {
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.stat-card .card-body {
+    padding: 1.25rem;
+}
+
+/* 图标样式 */
+.icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.icon-circle.primary {
+    background-color: #4e73df;
+}
+
+.icon-circle.success {
+    background-color: #1cc88a;
+}
+
+.icon-circle.info {
+    background-color: #36b9cc;
+}
+
+.icon-circle.warning {
+    background-color: #f6c23e;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    .card {
+        background-color: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    .card-header {
+        background-color: #4a5568;
+        border-bottom-color: #718096;
+    }
+    
+    .table {
+        color: #e2e8f0;
+    }
+    
+    .table th {
+        background-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .form-control,
+    .form-select {
+        background-color: #4a5568;
+        border-color: #718096;
+        color: #e2e8f0;
+    }
+    
+    .navbar-dark {
+        background-color: #2d3748 !important;
+    }
+}

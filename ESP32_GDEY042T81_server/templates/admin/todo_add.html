@@ -1,0 +1,108 @@
+{% extends "admin/base.html" %}
+
+{% block title %}添加待办事项{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-plus me-2"></i>添加待办事项
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="/admin/todos{% if device_id %}?device_id={{ device_id }}{% endif %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>返回列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin">首页</a></li>
+        <li class="breadcrumb-item"><a href="/admin/todos{% if device_id %}?device_id={{ device_id }}{% endif %}">待办事项管理</a></li>
+        <li class="breadcrumb-item active">添加待办事项</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>待办事项信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="/admin/todos/add">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="device_id" class="form-label">关联设备 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="device_id" name="device_id" required>
+                            <option value="">请选择设备</option>
+                            {% for device in devices %}
+                            <option value="{{ device.device_id }}" {% if device_id and device.device_id == device_id %}selected{% endif %}>
+                                {{ device.name or device.device_id }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">截止时间</label>
+                        <input type="datetime-local" class="form-control" id="due_date" name="due_date">
+                        <div class="form-text">留空表示无截止时间</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_completed" name="is_completed">
+                            <label class="form-check-label" for="is_completed">
+                                标记为已完成
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/admin/todos{% if device_id %}?device_id={{ device_id }}{% endif %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>帮助信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>创建一个新的待办事项：</p>
+                <ul>
+                    <li><strong>标题：</strong>待办事项的简短描述</li>
+                    <li><strong>描述：</strong>待办事项的详细说明（可选）</li>
+                    <li><strong>关联设备：</strong>选择要显示此待办事项的设备</li>
+                    <li><strong>截止时间：</strong>设置待办事项的截止时间（可选）</li>
+                    <li><strong>状态：</strong>可以选择直接标记为已完成</li>
+                </ul>
+                <p class="text-muted">创建后，待办事项将发送到关联的设备，并可以在设备上标记完成状态。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

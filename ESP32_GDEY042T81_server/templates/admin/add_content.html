@@ -1,0 +1,178 @@
+{% extends "admin/base.html" %}
+
+{% block title %}添加内容 - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-plus-circle me-2"></i>添加内容</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="/admin/contents" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> 返回内容列表
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">内容信息</h6>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                </div>
+                {% endif %}
+                
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="device_id" class="form-label">设备</label>
+                        <select class="form-select" id="device_id" name="device_id" required>
+                            <option value="">请选择设备</option>
+                            {% for device in devices %}
+                            <option value="{{ device.device_id }}" {% if selected_device == device.device_id %}selected{% endif %}>
+                                {{ device.name }} ({{ device.device_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">选择要添加内容的设备</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">标题</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                        <div class="form-text">为内容起一个易于识别的标题</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        <div class="form-text">内容的详细描述（可选）</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="timezone" class="form-label">时区</label>
+                            <select class="form-select" id="timezone" name="timezone">
+                                <option value="Asia/Shanghai" selected>Asia/Shanghai (北京时间)</option>
+                                <option value="UTC">UTC (协调世界时)</option>
+                                <option value="America/New_York">America/New_York (纽约时间)</option>
+                                <option value="Europe/London">Europe/London (伦敦时间)</option>
+                                <option value="Asia/Tokyo">Asia/Tokyo (东京时间)</option>
+                            </select>
+                            <div class="form-text">选择设备所在时区</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="time_format" class="form-label">时间格式</label>
+                            <input type="text" class="form-control" id="time_format" name="time_format" value="%Y-%m-%d %H:%M">
+                            <div class="form-text">时间显示格式，如：%Y-%m-%d %H:%M:%S</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                启用此内容
+                            </label>
+                            <div class="form-text">创建后立即激活此内容</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="auto_push" name="auto_push" checked>
+                            <label class="form-check-label" for="auto_push">
+                                创建后自动推送到设备
+                            </label>
+                            <div class="form-text">创建完成后自动将内容推送到设备</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/admin/contents" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> 创建内容
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-info">内容类型</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group mb-4">
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1"><i class="fas fa-font me-2"></i>文本内容</h6>
+                            <span class="badge bg-primary rounded-pill">当前</span>
+                        </div>
+                        <p class="mb-1">在此页面创建的是基本的文本内容，包括标题、描述和时间显示。</p>
+                        <small>适用于简单文字信息展示</small>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1"><i class="fas fa-image me-2"></i>图片内容</h6>
+                            <span class="badge bg-secondary rounded-pill">其他</span>
+                        </div>
+                        <p class="mb-1">如需创建图片内容，请使用"图片上传"功能，上传图片后系统会自动创建内容。</p>
+                        <small>适用于复杂图形和图像展示</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i> 创建内容后，系统将自动推送到对应设备。
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-warning">时间格式说明</h6>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3"><i class="fas fa-clock me-2"></i>常用时间格式代码</h6>
+                <div class="row g-2 mb-4">
+                    <div class="col-6"><span class="badge bg-light text-dark">%Y</span> 四位年份 (2023)</div>
+                    <div class="col-6"><span class="badge bg-light text-dark">%m</span> 两位月份 (01-12)</div>
+                    <div class="col-6"><span class="badge bg-light text-dark">%d</span> 两位日期 (01-31)</div>
+                    <div class="col-6"><span class="badge bg-light text-dark">%H</span> 24小时制小时 (00-23)</div>
+                    <div class="col-6"><span class="badge bg-light text-dark">%M</span> 分钟 (00-59)</div>
+                    <div class="col-6"><span class="badge bg-light text-dark">%S</span> 秒 (00-59)</div>
+                </div>
+                
+                <h6 class="mb-3"><i class="fas fa-code me-2"></i>格式示例</h6>
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <code>%Y-%m-%d %H:%M</code>
+                            <span class="text-muted">2023-12-25 14:30</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <code>%m/%d/%Y</code>
+                            <span class="text-muted">12/25/2023</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item px-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <code>%H:%M:%S</code>
+                            <span class="text-muted">14:30:45</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

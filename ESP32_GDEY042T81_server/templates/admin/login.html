@@ -1,0 +1,74 @@
+{% extends "admin/base.html" %}
+
+{% block title %}管理员登录{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>管理员登录</h2>
+            <p class="text-muted">墨水屏桌面屏幕系统</p>
+        </div>
+        
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <form method="post" action="/admin/login">
+            <div class="mb-3">
+                <label for="username" class="form-label">用户名</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label">密码</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                <label class="form-check-label" for="remember">记住我</label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100">登录</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+.login-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-header h2 {
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.login-header p {
+    margin-bottom: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

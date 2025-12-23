@@ -12,7 +12,11 @@ interface MenuItem {
   separator?: boolean;
 }
 
-export const MenuBar: React.FC = () => {
+interface MenuBarProps {
+  onOpenApp?: (appId: string) => void;
+}
+
+export const MenuBar: React.FC<MenuBarProps> = ({ onOpenApp }) => {
   const { t } = useLanguage();
   const { showAlert } = useModal();
   const [time, setTime] = useState(new Date());
@@ -80,6 +84,8 @@ export const MenuBar: React.FC = () => {
     special: [
       { label: t('cleanUp'), action: showNotImplemented },
       { label: t('emptyTrash'), action: () => showAlert(t('trashEmpty'), "Trash") },
+      { separator: true, label: '' },
+      { label: t('wifiConfig'), action: () => onOpenApp && onOpenApp('wifi') },
       { separator: true, label: '' },
       { label: t('restart'), action: () => window.location.reload() },
       { label: t('shutdown'), action: () => showAlert("It is now safe to turn off your computer.", "Shut Down") },

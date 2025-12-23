@@ -1,0 +1,158 @@
+{% extends "admin/base.html" %}
+
+{% block title %}添加设备 - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-plus-circle me-2"></i>添加设备</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="/admin/devices" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> 返回设备列表
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">设备信息</h6>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                </div>
+                {% endif %}
+                
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="device_id" class="form-label">设备ID</label>
+                        <input type="text" class="form-control" id="device_id" name="device_id" required>
+                        <div class="form-text">设备的唯一标识符，通常为ESP32的MAC地址或其他唯一ID</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">设备名称</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                        <div class="form-text">为设备起一个易于识别的名称</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="scene" class="form-label">应用场景</label>
+                        <select class="form-select" id="scene" name="scene" required>
+                            <option value="">请选择应用场景</option>
+                            <option value="office"><i class="fas fa-building me-1"></i>办公室</option>
+                            <option value="meeting"><i class="fas fa-users me-1"></i>会议室</option>
+                            <option value="reception"><i class="fas fa-concierge-bell me-1"></i>前台</option>
+                            <option value="lobby"><i class="fas fa-door-open me-1"></i>大厅</option>
+                            <option value="corridor"><i class="fas fa-route me-1"></i>走廊</option>
+                            <option value="classroom"><i class="fas fa-chalkboard-teacher me-1"></i>教室</option>
+                            <option value="other"><i class="fas fa-tag me-1"></i>其他</option>
+                        </select>
+                        <div class="form-text">选择设备所在的应用场景</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">设备位置</label>
+                        <input type="text" class="form-control" id="location" name="location" placeholder="例如：一楼大厅东侧">
+                        <div class="form-text">可选，提供更详细的位置信息</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">设备描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="设备用途、特殊配置等"></textarea>
+                        <div class="form-text">可选，提供设备的详细描述信息</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/admin/devices" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> 添加设备
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-info">设备配置说明</h6>
+            </div>
+            <div class="card-body">
+                <h5 class="mb-3"><i class="fas fa-microchip me-2"></i>设备ID获取方法</h5>
+                <p>设备ID通常可以通过以下方式获取：</p>
+                <div class="list-group mb-4">
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">ESP32的MAC地址</h6>
+                            <small>推荐</small>
+                        </div>
+                        <p class="mb-1">格式如：A1:B2:C3:D4:E5:F6</p>
+                        <small>可通过串口输出或设备标签获取</small>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">设备序列号</h6>
+                            <small>备选</small>
+                        </div>
+                        <p class="mb-1">制造商提供的唯一序列号</p>
+                        <small>确保在设备固件中一致</small>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">自定义ID</h6>
+                            <small>高级</small>
+                        </div>
+                        <p class="mb-1">自定义的唯一标识符</p>
+                        <small>需确保在设备固件中一致</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-warning">设备配置步骤</h6>
+            </div>
+            <div class="card-body">
+                <div class="process-steps">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div class="step-text">在ESP32固件中设置设备ID</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div class="step-text">配置MQTT连接参数</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div class="step-text">确保设备能连接到MQTT服务器</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <div class="step-text">在此页面添加设备信息</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">5</div>
+                        <div class="step-text">设备将自动连接并显示在设备列表中</div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-4" role="alert">
+                    <i class="fas fa-info-circle me-2"></i> 添加设备后，系统将自动生成设备密钥，用于设备认证。
+                </div>
+                
+                <div class="alert alert-light mt-3" role="alert">
+                    <h6 class="alert-heading"><i class="fas fa-lightbulb me-2"></i>提示</h6>
+                    <p class="mb-0">确保设备ID唯一且与固件中设置的一致，否则设备将无法正常连接到系统。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

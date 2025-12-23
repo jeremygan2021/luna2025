@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.tar
+__pycache__/
+**/__pycache__/
+ESP32_GDEY042T81_server/static/uploads/
+ESP32_GDEY042T81_server/static/processed/

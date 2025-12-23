@@ -1,8 +1,58 @@
 services:
+  # 前端应用 (Frontend App)
   app:
-    build: .
+    # build: .
+    image: luna-app:latest
+    pull_policy: never
     ports:
-      - "3000:3000"
-    environment:
-      - PORT=3000
+      - "3031:3000"
     restart: always
+    networks:
+      - luna-network
+
+  # ESP32服务端 (Backend Server)
+  luna-server:
+    # build:
+    #   context: ./ESP32_GDEY042T81_server
+    #   dockerfile: Dockerfile
+    image: luna-server:latest
+    pull_policy: never
+    container_name: luna-server
+    ports:
+      - "8199:8199"
+    volumes:
+      - ./ESP32_GDEY042T81_server/static:/app/static
+    env_file:
+      - ./ESP32_GDEY042T81_server/.env.docker
+    depends_on:
+      - luna-mqtt
+    restart: unless-stopped
+    networks:
+      - luna-network
+
+  # MQTT服务 (Eclipse Mosquitto)
+  luna-mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: luna-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./ESP32_GDEY042T81_server/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+      - mosquitto_config:/mosquitto/config
+    restart: unless-stopped
+    networks:
+      - luna-network
+
+# 数据卷
+volumes:
+  mosquitto_data:
+  mosquitto_logs:
+  mosquitto_config:
+
+# 网络
+networks:
+  luna-network:
+    driver: bridge

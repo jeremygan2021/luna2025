@@ -4,7 +4,7 @@ import { useLanguage } from './contexts/LanguageContext';
 import { useSound } from './contexts/SoundContext';
 import { MenuBar } from './components/MenuBar';
 import { DesktopIcon } from './components/DesktopIcon';
-import { FolderIcon, TrashIcon, DiskIcon, AppIcon, SnakeIcon, WeatherIcon } from './components/Icons';
+import { FolderIcon, TrashIcon, DiskIcon, AppIcon, SnakeIcon, WeatherIcon, BluetoothIcon } from './components/Icons';
 import { TodoApp } from './components/apps/TodoApp';
 import { SnakeGame } from './components/apps/SnakeGame';
 import { WeatherApp } from './components/apps/WeatherApp';
@@ -12,6 +12,7 @@ import { MacPaintApp } from './components/apps/MacPaintApp';
 import { MacWriteApp } from './components/apps/MacWriteApp';
 import { TrashApp } from './components/apps/TrashApp';
 import { SuckesApp } from './components/apps/SuckesApp';
+import { WifiConfigApp } from './components/apps/WifiConfigApp';
 import { PlaceholderApp } from './components/apps/PlaceholderApp';
 
 function App() {
@@ -75,6 +76,7 @@ function App() {
     { id: 'todo', label: t('todo'), icon: <AppIcon /> },
     { id: 'snake', label: t('snake'), icon: <SnakeIcon /> },
     { id: 'weather', label: t('weather'), icon: <WeatherIcon /> },
+    { id: 'wifi', label: t('wifiConfig'), icon: <BluetoothIcon /> },
     { id: 'macpaint', label: t('macpaint'), icon: <AppIcon /> },
     { id: 'macwrite', label: t('macwrite'), icon: <AppIcon /> },
     { id: 'suckes', label: t('suckes'), icon: <FolderIcon /> },
@@ -95,6 +97,7 @@ function App() {
     { id: 'todo', label: t('todo'), icon: <AppIcon /> }, 
     { id: 'snake', label: t('snake'), icon: <SnakeIcon /> },
     { id: 'weather', label: t('weather'), icon: <WeatherIcon /> },
+    { id: 'wifi', label: t('wifiConfig'), icon: <BluetoothIcon /> },
     { id: 'finder', label: t('finder'), icon: <FolderIcon /> },
     { id: 'trash', label: t('trash'), icon: <TrashIcon /> },
   ];
@@ -119,6 +122,8 @@ function App() {
         return <TrashApp {...commonProps} />;
       case 'suckes':
         return <SuckesApp {...commonProps} />;
+      case 'wifi':
+        return <WifiConfigApp {...commonProps} />;
       default: {
         // Find label for title
         const allIcons = [...mobileIcons, ...desktopIconsLeft, ...desktopIconsRight];
@@ -146,7 +151,7 @@ function App() {
           flexDirection: 'column', 
           overflow: 'hidden' 
         }}>
-          <MenuBar />
+          <MenuBar onOpenApp={setActiveApp} />
           
           <div style={{ 
             flex: 1, 

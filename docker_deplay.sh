@@ -1,32 +1,34 @@
 #!/bin/bash
 
 # =============================================================================
-# Docker 镜像构建和部署自动化脚本
-# # chmod u+x docker_deplay.sh
+# Docker 全栈部署自动化脚本 (Frontend + Backend + MQTT)
+# chmod u+x docker_deplay.sh
 # 用法:
 #   ./docker_deplay.sh          # 完整构建和部署流程 (默认AMD64架构)
 #   ./docker_deplay.sh -amd     # 构建和部署AMD64架构
 #   ./docker_deplay.sh -arm     # 构建和部署ARM64架构
-#   ./docker_deplay.sh -upload  # 仅上传已存在的tar文件并部署
-#   ./docker_deplay.sh -upload -amd  # 仅上传已存在的AMD64架构tar文件并部署
-#   ./docker_deplay.sh -upload -arm  # 仅上传已存在的ARM64架构tar文件并部署
+#   ./docker_deplay.sh -upload -arm # 仅上传已存在的tar文件并部署
+#   ./docker_deplay.sh -upload -amd # 仅上传已存在的tar文件并部署
 # =============================================================================
 
 # 配置变量 - 请根据实际情况修改
 SERVER_HOST="6.6.6.86"           # 服务器IP地址
-SERVER_USER="ubuntu"                     # 服务器用户名
-SERVER_PASSWORD="qweasdzxc1"        # 服务器密码
-SERVER_PORT="22"                       # SSH端口，默认22
-IMAGE_NAME="luna_phone_server"              # Docker镜像名称
-IMAGE_TAG="latest"                     # Docker镜像标签
-CONTAINER_NAME="luna_phone_server-container"       # 容器名称
-LOCAL_PORT="3031"                      # 本地端口
-CONTAINER_PORT="3000"                  # 容器端口
-TAR_FILE="${IMAGE_NAME}-${IMAGE_TAG}.tar"  # 压缩包文件名
+SERVER_USER="ubuntu"             # 服务器用户名
+SERVER_PASSWORD="qweasdzxc1"     # 服务器密码
+SERVER_PORT="22"                 # SSH端口，默认22
+
+# 项目部署目录 (服务器上)
+DEPLOY_DIR="/mnt/server/luna_project"
+
+# 镜像信息
+APP_IMAGE="luna-app:latest"
+    SERVER_IMAGE="luna-server:latest"
+MQTT_IMAGE="eclipse-mosquitto:2.0"
+TAR_FILE="luna_full_stack.tar"
 
 # 架构相关变量
-PLATFORM="linux/amd64"                # 默认架构
-ARCH_SUFFIX=""                         # 架构后缀，用于区分不同架构的tar文件
+PLATFORM="linux/amd64"           # 默认架构
+ARCH_SUFFIX=""                   # 架构后缀
 
 # 颜色输出
 RED='\033[0;31m'
@@ -36,38 +38,24 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 日志函数
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # 检查依赖
 check_dependencies() {
     log_info "检查依赖..."
-    
     if ! command -v docker &> /dev/null; then
         log_error "Docker 未安装，请先安装 Docker"
         exit 1
     fi
-    
     if ! command -v sshpass &> /dev/null; then
         log_error "sshpass 未安装，请先安装 sshpass"
         log_info "macOS: brew install sshpass"
         log_info "Ubuntu: sudo apt-get install sshpass"
         exit 1
     fi
-    
     log_success "依赖检查完成"
 }
 
@@ -100,103 +88,107 @@ parse_arguments() {
         esac
     done
     
-    # 更新TAR_FILE名，包含架构后缀
-    TAR_FILE="${IMAGE_NAME}-${IMAGE_TAG}${ARCH_SUFFIX}.tar"
-    log_info "镜像文件名: ${TAR_FILE}"
+    TAR_FILE="luna_full_stack${ARCH_SUFFIX}.tar"
+    log_info "打包文件名: ${TAR_FILE}"
 }
 
 # 构建Docker镜像
-build_image() {
-    log_info "开始构建 Docker 镜像..."
+build_images() {
+    log_info "开始构建 Docker 镜像 (架构: $PLATFORM)..."
     
-    # 检查是否存在旧的tar文件
     if [ -f "$TAR_FILE" ]; then
         log_warning "发现旧的tar文件，正在删除..."
         rm -f "$TAR_FILE"
     fi
     
-    # 构建镜像并导出为tar文件
-    docker buildx build --platform $PLATFORM -t "${IMAGE_NAME}:${IMAGE_TAG}" --output type=docker,dest="./${TAR_FILE}" .
+    # 1. 构建前端 App
+    log_info "构建前端应用 (${APP_IMAGE})..."
+    docker buildx build --platform $PLATFORM -t "${APP_IMAGE}" --load .
+    if [ $? -ne 0 ]; then log_error "前端应用构建失败"; exit 1; fi
+
+    # 2. 构建后端 Server
+    log_info "构建后端服务 (${SERVER_IMAGE})..."
+    docker buildx build --platform $PLATFORM -t "${SERVER_IMAGE}" --load ./ESP32_GDEY042T81_server
+    if [ $? -ne 0 ]; then log_error "后端服务构建失败"; exit 1; fi
+
+    # 3. 拉取/准备 MQTT 镜像
+    log_info "准备 MQTT 镜像 (${MQTT_IMAGE})..."
+    docker pull --platform $PLATFORM "${MQTT_IMAGE}"
+    if [ $? -ne 0 ]; then log_error "MQTT 镜像拉取失败"; exit 1; fi
+
+    # 4. 导出所有镜像到同一个 tar
+    log_info "正在导出所有镜像到 ${TAR_FILE}..."
+    docker save -o "${TAR_FILE}" "${APP_IMAGE}" "${SERVER_IMAGE}" "${MQTT_IMAGE}"
     
     if [ $? -eq 0 ]; then
-        log_success "Docker 镜像构建完成: ${TAR_FILE}"
+        log_success "所有镜像构建并打包完成: ${TAR_FILE}"
     else
-        log_error "Docker 镜像构建失败"
+        log_error "镜像打包失败"
         exit 1
     fi
 }
 
 # 上传文件到服务器
 upload_to_server() {
-    log_info "上传文件到服务器..."
+    log_info "准备上传文件到服务器..."
     
-    sshpass -p "$SERVER_PASSWORD" scp -P "$SERVER_PORT" -o StrictHostKeyChecking=no "$TAR_FILE" "${SERVER_USER}@${SERVER_HOST}:/tmp/"
+    # 1. 修复远程目录权限 (防止 Permission denied)
+    log_info "检查并修复远程目录权限..."
+    FIX_PERM_CMD="
+        echo '${SERVER_PASSWORD}' | sudo -S mkdir -p ${DEPLOY_DIR}/ESP32_GDEY042T81_server
+        echo '${SERVER_PASSWORD}' | sudo -S chown -R ${SERVER_USER}:${SERVER_USER} ${DEPLOY_DIR}
+    "
+    sshpass -p "$SERVER_PASSWORD" ssh -t -p "$SERVER_PORT" -o StrictHostKeyChecking=no "${SERVER_USER}@${SERVER_HOST}" "$FIX_PERM_CMD"
     
-    if [ $? -eq 0 ]; then
-        log_success "文件上传成功"
-    else
-        log_error "文件上传失败"
-        exit 1
-    fi
+    # 2. 上传 Docker 镜像包
+    log_info "上传镜像包 (可能需要几分钟)..."
+    sshpass -p "$SERVER_PASSWORD" scp -P "$SERVER_PORT" -o StrictHostKeyChecking=no "$TAR_FILE" "${SERVER_USER}@${SERVER_HOST}:${DEPLOY_DIR}/"
+    
+    # 3. 上传 docker-compose.yml
+    log_info "上传 docker-compose.yml..."
+    sshpass -p "$SERVER_PASSWORD" scp -P "$SERVER_PORT" -o StrictHostKeyChecking=no "docker-compose.yml" "${SERVER_USER}@${SERVER_HOST}:${DEPLOY_DIR}/"
+    
+    # 4. 上传配置文件 (mosquitto.conf, .env.docker)
+    log_info "上传配置文件..."
+    sshpass -p "$SERVER_PASSWORD" scp -P "$SERVER_PORT" -o StrictHostKeyChecking=no "ESP32_GDEY042T81_server/mosquitto.conf" "${SERVER_USER}@${SERVER_HOST}:${DEPLOY_DIR}/ESP32_GDEY042T81_server/"
+    sshpass -p "$SERVER_PASSWORD" scp -P "$SERVER_PORT" -o StrictHostKeyChecking=no "ESP32_GDEY042T81_server/.env.docker" "${SERVER_USER}@${SERVER_HOST}:${DEPLOY_DIR}/ESP32_GDEY042T81_server/"
+    
+    log_success "文件上传完成"
 }
 
 # 在服务器上部署
 deploy_on_server() {
-    log_info "在服务器上部署..."
+    log_info "在服务器上执行部署..."
     
-    sshpass -p "$SERVER_PASSWORD" ssh -p "$SERVER_PORT" -o StrictHostKeyChecking=no "${SERVER_USER}@${SERVER_HOST}" << EOF
+    # 第一次尝试：直接使用 SSH 命令
+    # 注意：这里我们移除了 sshpass 并在 EOF 块中直接执行命令
+    # 如果您的 SSH 密钥已配置，这将无密码运行
+    # 如果没有配置密钥，它会失败，然后我们可能需要另一种方法
+    
+    # 构建远程命令字符串
+    REMOTE_CMD="
         set -e
+        cd ${DEPLOY_DIR}
         
-        echo "[INFO] 开始服务器端部署..."
+        echo '[INFO] 加载 Docker 镜像...'
+        echo '${SERVER_PASSWORD}' | sudo -S docker load -i ${TAR_FILE}
         
-        # 检查并停止现有容器
-        if sudo docker ps -a --format 'table {{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-            echo "[INFO] 发现现有容器 ${CONTAINER_NAME}，正在停止并删除..."
-            sudo docker stop ${CONTAINER_NAME} || true
-            sudo docker rm ${CONTAINER_NAME} || true
-        fi
+        echo '[INFO] 使用 Docker Compose 启动服务...'
+        mkdir -p ESP32_GDEY042T81_server/static
         
-        # 检查并删除现有镜像
-        if sudo docker images --format 'table {{.Repository}}:{{.Tag}}' | grep -q "^${IMAGE_NAME}:${IMAGE_TAG}$"; then
-            echo "[INFO] 发现现有镜像 ${IMAGE_NAME}:${IMAGE_TAG}，正在删除..."
-            sudo docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
-        fi
+        echo '[INFO] 启动服务...'
+        # echo '${SERVER_PASSWORD}' | sudo -S docker-compose up -d --remove-orphans
+        echo '${SERVER_PASSWORD}' | sudo -S docker-compose up -d --no-build --remove-orphans
         
-        # 加载新镜像
-        echo "[INFO] 加载新镜像..."
-        sudo docker load -i /tmp/${TAR_FILE}
+        echo '[INFO] 清理镜像包...'
+        rm -f ${TAR_FILE}
         
-        # 验证镜像是否加载成功
-        if sudo docker images | grep -q "${IMAGE_NAME}"; then
-            echo "[SUCCESS] 镜像加载成功"
-        else
-            echo "[ERROR] 镜像加载失败"
-            exit 1
-        fi
-        
-        # 运行新容器
-        echo "[INFO] 启动新容器..."
-        sudo docker run -d -p ${LOCAL_PORT}:${CONTAINER_PORT} --name ${CONTAINER_NAME} ${IMAGE_NAME}:${IMAGE_TAG}
-        
-        # 验证容器是否启动成功
-        if sudo docker ps | grep -q "${CONTAINER_NAME}"; then
-            echo "[SUCCESS] 容器启动成功"
-            echo "[INFO] 容器状态:"
-            sudo docker ps | grep "${CONTAINER_NAME}"
-        else
-            echo "[ERROR] 容器启动失败"
-            echo "[INFO] 查看容器日志:"
-            sudo docker logs ${CONTAINER_NAME}
-            exit 1
-        fi
-        
-        # 清理临时文件
-        echo "[INFO] 清理临时文件..."
-        rm -f /tmp/${TAR_FILE}
-        
-        echo "[SUCCESS] 部署完成！"
-        echo "[INFO] 应用访问地址: http://${SERVER_HOST}:${LOCAL_PORT}"
-EOF
+        echo '[INFO] 检查运行状态:'
+        echo '${SERVER_PASSWORD}' | sudo -S docker-compose ps
+    "
+
+    # 使用 sshpass 执行远程命令
+    sshpass -p "$SERVER_PASSWORD" ssh -t -p "$SERVER_PORT" -o StrictHostKeyChecking=no "${SERVER_USER}@${SERVER_HOST}" "$REMOTE_CMD"
 
     if [ $? -eq 0 ]; then
         log_success "服务器部署完成"
@@ -209,7 +201,6 @@ EOF
 # 清理本地文件
 cleanup_local() {
     log_info "清理本地临时文件..."
-    
     if [ -f "$TAR_FILE" ]; then
         rm -f "$TAR_FILE"
         log_success "本地临时文件已清理"
@@ -218,67 +209,58 @@ cleanup_local() {
 
 # 显示部署信息
 show_deployment_info() {
-    log_success "部署完成！"
     echo ""
     echo "=========================================="
-    echo "部署信息:"
+    echo "部署完成!"
     echo "=========================================="
     echo "服务器地址: ${SERVER_HOST}"
-    echo "应用端口: ${LOCAL_PORT}"
-    echo "访问地址: http://${SERVER_HOST}:${LOCAL_PORT}"
-    echo "容器名称: ${CONTAINER_NAME}"
-    echo "镜像名称: ${IMAGE_NAME}:${IMAGE_TAG}"
-    echo "目标架构: ${PLATFORM}"
-    echo "镜像文件: ${TAR_FILE}"
+    echo "部署目录: ${DEPLOY_DIR}"
+    echo "前端访问: http://${SERVER_HOST}:3031"
+    echo "后端 API: http://${SERVER_HOST}:8199"
+    echo "MQTT 服务: ${SERVER_HOST}:1883"
     echo "=========================================="
-    echo ""
-    log_info "如需查看容器日志，请在服务器上运行: sudo docker logs ${CONTAINER_NAME}"
-    log_info "如需停止容器，请在服务器上运行: sudo docker stop ${CONTAINER_NAME}"
+    echo "查看日志: ssh ${SERVER_USER}@${SERVER_HOST} 'cd ${DEPLOY_DIR} && sudo docker-compose logs -f'"
+    echo "停止服务: ssh ${SERVER_USER}@${SERVER_HOST} 'cd ${DEPLOY_DIR} && sudo docker-compose down'"
 }
 
 # 主函数
 main() {
     echo "=========================================="
-    echo "Docker 镜像构建和部署自动化脚本"
+    echo "Docker 全栈部署脚本 (Compose Version)"
     echo "=========================================="
-    echo ""
     
-    # 解析命令行参数
     UPLOAD_ONLY=false
     parse_arguments "$@"
     
-    # 检查配置
-    if [ "$SERVER_HOST" = "your-server-ip" ] || [ "$SERVER_PASSWORD" = "your-password" ]; then
-        log_error "请先配置脚本顶部的服务器信息"
-        log_info "需要修改的变量:"
-        log_info "  - SERVER_HOST: 服务器IP地址"
-        log_info "  - SERVER_USER: 服务器用户名"
-        log_info "  - SERVER_PASSWORD: 服务器密码"
+    if [ "$SERVER_HOST" = "your-server-ip" ]; then
+        log_error "请先配置脚本中的服务器信息 (SERVER_HOST, SERVER_USER, etc)"
         exit 1
     fi
     
-    # 检查是否是上传模式
     if [ "$UPLOAD_ONLY" = true ]; then
-        log_info "检测到 -upload 参数，跳过构建步骤"
-        
-        # 检查tar文件是否存在
         if [ ! -f "$TAR_FILE" ]; then
             log_error "未找到tar文件: $TAR_FILE"
-            log_info "请先运行脚本构建镜像，或确保tar文件存在"
+            
+            # 智能检测其他架构的包
+            if [ -f "luna_full_stack-arm64.tar" ]; then
+                log_info "发现 luna_full_stack-arm64.tar，你是否想上传 ARM64 版本？"
+                log_info "请使用命令: ./docker_deplay.sh -upload -arm"
+            elif [ -f "luna_full_stack-amd64.tar" ]; then
+                log_info "发现 luna_full_stack-amd64.tar，你是否想上传 AMD64 版本？"
+                log_info "请使用命令: ./docker_deplay.sh -upload -amd"
+            else
+                log_info "原因: -upload 模式仅用于上传已存在的构建文件。"
+                log_info "解决: 请先运行不带 -upload 参数的命令来构建镜像，例如: ./docker_deplay.sh"
+            fi
             exit 1
         fi
-        
-        log_success "找到tar文件: $TAR_FILE"
-        
-        # 执行上传和部署流程
         upload_to_server
         deploy_on_server
         cleanup_local
         show_deployment_info
     else
-        # 执行完整的部署流程
         check_dependencies
-        build_image
+        build_images
         upload_to_server
         deploy_on_server
         cleanup_local
@@ -286,7 +268,6 @@ main() {
     fi
 }
 
-# 脚本入口
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi

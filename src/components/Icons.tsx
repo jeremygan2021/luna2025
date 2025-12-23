@@ -49,3 +49,10 @@ export const WeatherIcon = ({ size = 32 }: { size?: number }) => (
     <path d="M16 4v4M16 24v4M4 16h4M24 16h4M7.5 7.5l2.8 2.8M21.7 21.7l2.8 2.8M7.5 24.5l2.8-2.8M21.7 10.3l2.8-2.8" strokeWidth="2" />
   </svg>
 );
+
+export const BluetoothIcon = ({ size = 32 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 4l8 10-8 8V4z" />
+    <path d="M6 10l16 12M22 10L6 22" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);

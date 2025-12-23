@@ -1,0 +1,295 @@
+{% extends "admin/base.html" %}
+
+{% block title %}内容详情 - {{ content.title }} - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-file-alt me-2"></i>内容详情 - {{ content.title }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="/admin/contents" class="btn btn-secondary me-2">
+            <i class="fas fa-arrow-left me-1"></i> 返回内容列表
+        </a>
+        <a href="/admin/devices/{{ device.device_id }}" class="btn btn-primary">
+            <i class="fas fa-tv me-1"></i> 查看设备
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 内容信息 -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-info-circle me-2"></i>内容信息</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-hover">
+                    <tr>
+                        <th width="30%"><i class="fas fa-tv me-2"></i>设备</th>
+                        <td><a href="/admin/devices/{{ device.device_id }}">{{ device.name }} ({{ device.device_id }})</a></td>
+                    </tr>
+                    <tr>
+                        <th><i class="fas fa-heading me-2"></i>标题</th>
+                        <td>{{ content.title }}</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fas fa-code-branch me-2"></i>版本</th>
+                        <td><span class="badge bg-info">v{{ content.version }}</span></td>
+                    </tr>
+                    <tr>
+                        <th><i class="fas fa-align-left me-2"></i>描述</th>
+                        <td>{{ content.description or '无' }}</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fas fa-toggle-on me-2"></i>状态</th>
+                        <td>
+                            {% if content.is_active %}
+                            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>活跃</span>
+                            {% else %}
+                            <span class="badge bg-secondary"><i class="fas fa-pause-circle me-1"></i>禁用</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><i class="fas fa-globe me-2"></i>时区</th>
+                        <td>{{ content.timezone }}</td>
+                    </tr>
+                    <tr>
+                        <th><i class="fas fa-clock me-2"></i>时间格式</th>
+                        <td><code>{{ content.time_format }}</code></td>
+                    </tr>
+                    <tr>
+                        <th><i class="fas fa-calendar-plus me-2"></i>创建时间</th>
+                        <td>{{ content.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 内容操作 -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-info"><i class="fas fa-cogs me-2"></i>内容操作</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" onclick="pushContent('{{ device.device_id }}', {{ content.version }})">
+                        <i class="fas fa-paper-plane me-2"></i> 推送到设备
+                    </button>
+                    <button class="btn btn-warning" onclick="toggleContentStatus('{{ device.device_id }}', {{ content.version }})">
+                        {% if content.is_active %}
+                        <i class="fas fa-pause me-2"></i> 禁用内容
+                        {% else %}
+                        <i class="fas fa-play me-2"></i> 启用内容
+                        {% endif %}
+                    </button>
+                    <a href="/admin/upload?device_id={{ device.device_id }}&version={{ content.version }}" class="btn btn-info">
+                        <i class="fas fa-image me-2"></i> 上传图片
+                    </a>
+                    <button class="btn btn-danger" onclick="deleteContent('{{ device.device_id }}', {{ content.version }})">
+                        <i class="fas fa-trash me-2"></i> 删除内容
+                    </button>
+                </div>
+                
+                <div class="mt-4">
+                    <h6 class="mb-3"><i class="fas fa-chart-line me-2"></i>推送历史</h6>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-history me-2"></i>最后推送时间</span>
+                            <span class="badge bg-primary rounded-pill">{{ content.last_pushed_at.strftime('%Y-%m-%d %H:%M') if content.last_pushed_at else '从未' }}</span>
+                        </div>
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-sync-alt me-2"></i>推送次数</span>
+                            <span class="badge bg-info rounded-pill">{{ content.push_count or 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片预览 -->
+{% if content.image_path %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-image me-2"></i>图片预览</h6>
+    </div>
+    <div class="card-body text-center">
+        <div class="position-relative d-inline-block">
+            <img src="{{ content.image_path }}" alt="内容图片" class="img-fluid rounded shadow-sm" style="max-height: 400px;">
+            <div class="position-absolute top-0 end-0 p-2">
+                <a href="{{ content.image_path }}" target="_blank" class="btn btn-sm btn-light bg-white rounded-circle">
+                    <i class="fas fa-expand"></i>
+                </a>
+            </div>
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-sm btn-outline-secondary" onclick="downloadImage('{{ content.image_path }}')">
+                <i class="fas fa-download me-1"></i> 下载图片
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 布局配置 -->
+{% if layout_config %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-th-large me-2"></i>布局配置</h6>
+    </div>
+    <div class="card-body">
+        <div class="bg-light p-3 rounded">
+            <pre class="mb-0">{{ layout_config | tojson(indent=2) }}</pre>
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-sm btn-outline-primary" onclick="copyLayoutConfig()">
+                <i class="fas fa-copy me-1"></i> 复制配置
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 设备信息 -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-tv me-2"></i>设备信息</h6>
+    </div>
+    <div class="card-body">
+        <table class="table table-borderless table-hover">
+            <tr>
+                <th width="30%"><i class="fas fa-barcode me-2"></i>设备ID</th>
+                <td><code>{{ device.device_id }}</code></td>
+            </tr>
+            <tr>
+                <th><i class="fas fa-tag me-2"></i>设备名称</th>
+                <td>{{ device.name }}</td>
+            </tr>
+            <tr>
+                <th><i class="fas fa-map-marker-alt me-2"></i>应用场景</th>
+                <td>{{ device.scene }}</td>
+            </tr>
+            <tr>
+                <th><i class="fas fa-toggle-on me-2"></i>状态</th>
+                <td>
+                    {% if device.is_active %}
+                        {% if device.is_online %}
+                        <span class="badge bg-success"><i class="fas fa-wifi me-1"></i>在线</span>
+                        {% else %}
+                        <span class="badge bg-warning"><i class="fas fa-wifi-slash me-1"></i>离线</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>禁用</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th><i class="fas fa-clock me-2"></i>最后上线</th>
+                <td>{{ device.last_online.strftime('%Y-%m-%d %H:%M:%S') if device.last_online else '从未' }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function pushContent(deviceId, version) {
+    if (confirm('确定要推送此内容到设备吗？')) {
+        fetch(`/api/devices/${deviceId}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                version: version
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            showToast('内容推送成功', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('内容推送失败', 'error');
+        });
+    }
+}
+
+function toggleContentStatus(deviceId, version) {
+    const action = event.target.textContent.includes('启用') ? '启用' : '禁用';
+    if (confirm(`确定要${action}此内容吗？`)) {
+        fetch(`/api/contents/${deviceId}/${version}/toggle`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            showToast(`内容${action}成功`, 'success');
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast(`内容${action}失败`, 'error');
+        });
+    }
+}
+
+function deleteContent(deviceId, version) {
+    if (confirm('确定要删除此内容吗？此操作不可恢复！')) {
+        fetch(`/api/contents/${deviceId}/${version}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            showToast('内容删除成功', 'success');
+            window.location.href = `/admin/devices/${deviceId}`;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('内容删除失败', 'error');
+        });
+    }
+}
+
+function downloadImage(imagePath) {
+    const link = document.createElement('a');
+    link.href = imagePath;
+    link.download = imagePath.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function copyLayoutConfig() {
+    const configText = document.querySelector('pre').textContent;
+    navigator.clipboard.writeText(configText).then(() => {
+        showToast('布局配置已复制到剪贴板', 'success');
+    }).catch(err => {
+        console.error('复制失败:', err);
+        showToast('复制失败', 'error');
+    });
+}
+
+function showToast(message, type) {
+    // 创建一个简单的toast通知，而不是使用alert
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed top-0 end-0 m-3`;
+    toast.style.zIndex = '1050';
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}`;
+    document.body.appendChild(toast);
+    
+    // 3秒后自动移除
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 500);
+    }, 3000);
+}
+</script>
+{% endblock %}

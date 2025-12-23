@@ -1,0 +1,503 @@
+{% extends "admin/base.html" %}
+
+{% block title %}仪表盘 - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-chart-line me-2"></i>仪表盘</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshDashboard">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="themeToggle" title="切换主题">
+                <i class="fas fa-snowflake"></i> 圣诞主题
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-stats bg-primary text-white shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-5">
+                        <div class="icon-big text-center">
+                            <i class="fas fa-desktop"></i>
+                        </div>
+                    </div>
+                    <div class="col-7">
+                        <div class="numbers">
+                            <p class="card-category">设备总数</p>
+                            <h3 class="card-title">{{ device_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="stats">
+                    <i class="fas fa-clock"></i> 最近更新: {{ last_update or '刚刚' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-stats bg-success text-white shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-5">
+                        <div class="icon-big text-center">
+                            <i class="fas fa-wifi"></i>
+                        </div>
+                    </div>
+                    <div class="col-7">
+                        <div class="numbers">
+                            <p class="card-category">活跃设备</p>
+                            <h3 class="card-title">{{ active_device_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="stats">
+                    <i class="fas fa-signal"></i> 在线率: {{ ((active_device_count / device_count * 100) | round(1) if device_count > 0 else 0) }}%
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-stats bg-info text-white shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-5">
+                        <div class="icon-big text-center">
+                            <i class="fas fa-images"></i>
+                        </div>
+                    </div>
+                    <div class="col-7">
+                        <div class="numbers">
+                            <p class="card-category">内容总数</p>
+                            <h3 class="card-title">{{ content_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="stats">
+                    <i class="fas fa-database"></i> 存储空间: {{ storage_usage or '未知' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-stats bg-warning text-white shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-5">
+                        <div class="icon-big text-center">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                    </div>
+                    <div class="col-7">
+                        <div class="numbers">
+                            <p class="card-category">待办事项</p>
+                            <h3 class="card-title">{{ todo_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="stats">
+                    <i class="fas fa-check-circle"></i> 完成率: {{ ((completed_todo_count / todo_count * 100) | round(1) if todo_count > 0 else 0) }}%
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-stats bg-danger text-white shadow-sm">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-5">
+                        <div class="icon-big text-center">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="col-7">
+                        <div class="numbers">
+                            <p class="card-category">待完成</p>
+                            <h3 class="card-title">{{ pending_todo_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="stats">
+                    <i class="fas fa-clock"></i> 待处理任务
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 最近上线的设备 -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-2"></i>最近上线的设备
+                </h6>
+                <a href="/admin/devices" class="btn btn-sm btn-primary">
+                    <i class="fas fa-list me-1"></i>查看全部
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_devices %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="fas fa-barcode me-1"></i>设备ID</th>
+                                <th><i class="fas fa-tag me-1"></i>名称</th>
+                                <th><i class="fas fa-toggle-on me-1"></i>状态</th>
+                                <th><i class="fas fa-clock me-1"></i>最后上线</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for device in recent_devices %}
+                            <tr>
+                                <td><a href="/admin/devices/{{ device.device_id }}" class="text-decoration-none"><code>{{ device.device_id }}</code></a></td>
+                                <td>{{ device.name }}</td>
+                                <td>
+                                    {% if device.is_online %}
+                                    <span class="badge bg-success"><i class="fas fa-wifi me-1"></i>在线</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary"><i class="fas fa-wifi-slash me-1"></i>离线</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ device.last_online.strftime('%Y-%m-%d %H:%M') if device.last_online else '从未' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">暂无设备</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近待办事项 -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-tasks me-2"></i>最近待办事项
+                </h6>
+                <a href="/admin/todos" class="btn btn-sm btn-primary">
+                    <i class="fas fa-list me-1"></i>查看全部
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_todos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="fas fa-heading me-1"></i>标题</th>
+                                <th><i class="fas fa-mobile-alt me-1"></i>设备</th>
+                                <th><i class="fas fa-check me-1"></i>状态</th>
+                                <th><i class="fas fa-calendar me-1"></i>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_todos %}
+                            {% set todo = item.todo %}
+                            {% set device = item.device %}
+                            <tr>
+                                <td><a href="/admin/todos/{{ todo.id }}" class="text-decoration-none">{{ todo.title }}</a></td>
+                                <td><a href="/admin/devices/{{ device.device_id }}" class="text-decoration-none">{{ device.name or device.device_id }}</a></td>
+                                <td>
+                                    {% if todo.is_completed %}
+                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>已完成</span>
+                                    {% else %}
+                                    <span class="badge bg-warning"><i class="fas fa-clock me-1"></i>待完成</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ todo.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">暂无待办事项</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快捷操作 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-rocket me-2"></i>快捷操作
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="/admin/devices/add" class="btn btn-primary btn-lg btn-block">
+                            <i class="fas fa-plus me-2"></i> 添加设备
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/admin/contents/add" class="btn btn-info btn-lg btn-block">
+                            <i class="fas fa-plus me-2"></i> 添加内容
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/admin/todos/add" class="btn btn-warning btn-lg btn-block">
+                            <i class="fas fa-plus me-2"></i> 添加待办
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/admin/todos" class="btn btn-success btn-lg btn-block">
+                            <i class="fas fa-tasks me-2"></i> 待办管理
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统状态 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-heartbeat me-2"></i>系统状态
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-database fa-2x text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">数据库</h6>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted">连接正常</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-network-wired fa-2x text-info"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">MQTT服务</h6>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted">运行中</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-microchip fa-2x text-warning"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1">存储空间</h6>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: 45%" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted">已使用 45%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 刷新仪表盘
+    document.getElementById('refreshDashboard').addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        icon.classList.add('fa-spin');
+        
+        setTimeout(() => {
+            location.reload();
+        }, 500);
+    });
+    
+    // 主题切换
+    document.getElementById('themeToggle').addEventListener('click', function() {
+        const body = document.body;
+        const isChristmas = body.classList.contains('christmas-theme');
+        
+        if (isChristmas) {
+            body.classList.remove('christmas-theme');
+            localStorage.setItem('theme', 'default');
+            this.innerHTML = '<i class="fas fa-snowflake"></i> 圣诞主题';
+            showToast('已切换到默认主题', 'info');
+        } else {
+            body.classList.add('christmas-theme');
+            localStorage.setItem('theme', 'christmas');
+            this.innerHTML = '<i class="fas fa-sun"></i> 默认主题';
+            showToast('已切换到圣诞主题', 'success');
+            
+            // 添加圣诞特效
+            addChristmasEffects();
+        }
+    });
+    
+    // 页面加载时检查主题设置
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'christmas') {
+            document.body.classList.add('christmas-theme');
+            document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i> 默认主题';
+            addChristmasEffects();
+        }
+    });
+    
+    // 添加圣诞特效
+    function addChristmasEffects() {
+        // 创建雪花效果
+        createSnowflakes();
+        
+        // 添加圣诞装饰
+        addChristmasDecorations();
+    }
+    
+    // 创建雪花效果
+    function createSnowflakes() {
+        // 如果已经存在雪花容器，先移除
+        const existingSnowflakes = document.getElementById('snowflakes-container');
+        if (existingSnowflakes) {
+            existingSnowflakes.remove();
+        }
+        
+        // 创建雪花容器
+        const snowflakesContainer = document.createElement('div');
+        snowflakesContainer.id = 'snowflakes-container';
+        snowflakesContainer.style.position = 'fixed';
+        snowflakesContainer.style.top = '0';
+        snowflakesContainer.style.left = '0';
+        snowflakesContainer.style.width = '100%';
+        snowflakesContainer.style.height = '100%';
+        snowflakesContainer.style.pointerEvents = 'none';
+        snowflakesContainer.style.zIndex = '999';
+        snowflakesContainer.style.overflow = 'hidden';
+        
+        // 创建雪花
+        for (let i = 0; i < 50; i++) {
+            const snowflake = document.createElement('div');
+            snowflake.className = 'snowflake';
+            snowflake.innerHTML = '❄';
+            snowflake.style.position = 'absolute';
+            snowflake.style.top = Math.random() * 100 + '%';
+            snowflake.style.left = Math.random() * 100 + '%';
+            snowflake.style.fontSize = Math.random() * 10 + 10 + 'px';
+            snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+            snowflake.style.animation = `fall ${Math.random() * 5 + 5}s linear infinite`;
+            snowflake.style.animationDelay = Math.random() * 5 + 's';
+            
+            snowflakesContainer.appendChild(snowflake);
+        }
+        
+        document.body.appendChild(snowflakesContainer);
+        
+        // 添加雪花下落动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fall {
+                from { transform: translateY(-100px); }
+                to { transform: translateY(calc(100vh + 100px)); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // 添加圣诞装饰
+    function addChristmasDecorations() {
+        // 在页面顶部添加圣诞装饰横幅
+        const header = document.querySelector('nav.navbar');
+        if (header && !header.classList.contains('christmas-decorated')) {
+            header.classList.add('christmas-decorated');
+            
+            // 创建圣诞装饰
+            const decorations = document.createElement('div');
+            decorations.className = 'christmas-decorations';
+            decorations.style.position = 'absolute';
+            decorations.style.top = '0';
+            decorations.style.left = '0';
+            decorations.style.width = '100%';
+            decorations.style.height = '10px';
+            decorations.style.background = 'linear-gradient(90deg, #ff0000, #00ff00, #ff0000, #00ff00, #ff0000)';
+            decorations.style.zIndex = '10';
+            
+            header.style.position = 'relative';
+            header.appendChild(decorations);
+            
+            // 添加圣诞帽到logo
+            const logo = document.querySelector('.navbar-brand');
+            if (logo && !logo.querySelector('.christmas-hat')) {
+                const hat = document.createElement('span');
+                hat.className = 'christmas-hat';
+                hat.innerHTML = '🎅';
+                hat.style.marginLeft = '5px';
+                logo.appendChild(hat);
+            }
+        }
+    }
+    
+    // Toast通知函数
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : type === 'info' ? 'info' : 'danger'} position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '1050';
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'info' ? 'info-circle' : 'exclamation-circle'} me-2"></i>${message}`;
+        document.body.appendChild(toast);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 500);
+        }, 3000);
+    }
+</script>
+{% endblock %}

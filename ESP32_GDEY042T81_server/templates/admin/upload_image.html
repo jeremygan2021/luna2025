@@ -1,0 +1,288 @@
+{% extends "admin/base.html" %}
+
+{% block title %}图片上传 - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-image me-2"></i>图片上传</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="/admin/contents" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> 返回内容列表
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">图片上传</h6>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                </div>
+                {% endif %}
+                
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    <div class="mb-3">
+                        <label for="device_id" class="form-label">设备</label>
+                        <select class="form-select" id="device_id" name="device_id" required>
+                            <option value="">请选择设备</option>
+                            {% for device in devices %}
+                            <option value="{{ device.device_id }}">{{ device.name }} ({{ device.device_id }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">选择要上传图片的设备</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="version" class="form-label">内容版本</label>
+                        <select class="form-select" id="version" name="version">
+                            <option value="">创建新版本</option>
+                        </select>
+                        <div class="form-text">选择现有版本或创建新版本</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">内容标题</label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="输入内容标题">
+                        <div class="form-text">为图片内容添加描述性标题</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="image" class="form-label">图片文件</label>
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                            <div class="upload-overlay">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <p class="mb-2">拖拽图片到此处或点击选择</p>
+                                    <p class="text-muted small">支持JPG、PNG、BMP等常见图片格式</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 图片预览 -->
+                    <div class="mb-3" id="imagePreview" style="display: none;">
+                        <label class="form-label">图片预览</label>
+                        <div class="preview-container">
+                            <img id="previewImg" src="#" alt="图片预览" class="img-fluid">
+                            <div class="preview-actions">
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="removeImage">
+                                    <i class="fas fa-trash"></i> 移除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoPush" name="autoPush" checked>
+                            <label class="form-check-label" for="autoPush">
+                                上传后自动推送到设备
+                            </label>
+                            <div class="form-text">上传完成后自动将内容推送到设备</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enhanceContrast" name="enhanceContrast" checked>
+                            <label class="form-check-label" for="enhanceContrast">
+                                增强图片对比度
+                            </label>
+                            <div class="form-text">自动优化图片对比度以适应墨水屏显示</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/admin/contents" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="uploadBtn">
+                            <i class="fas fa-upload me-1"></i> 上传图片
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-info">图片处理说明</h6>
+            </div>
+            <div class="card-body">
+                <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>支持的图片格式</h5>
+                <div class="row g-2 mb-4">
+                    <div class="col-6"><span class="badge bg-light text-dark">JPEG/JPG</span></div>
+                    <div class="col-6"><span class="badge bg-light text-dark">PNG</span></div>
+                    <div class="col-6"><span class="badge bg-light text-dark">BMP</span></div>
+                    <div class="col-6"><span class="badge bg-light text-dark">WEBP</span></div>
+                </div>
+                
+                <h5 class="mb-3"><i class="fas fa-cogs me-2"></i>图片处理流程</h5>
+                <div class="process-steps">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div class="step-text">上传原始图片</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div class="step-text">自动转换为黑白图像</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div class="step-text">调整大小以适应墨水屏</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">4</div>
+                        <div class="step-text">优化对比度</div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number">5</div>
+                        <div class="step-text">保存处理后的图片</div>
+                    </div>
+                </div>
+                
+                <h5 class="mb-3 mt-4"><i class="fas fa-desktop me-2"></i>墨水屏规格</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        分辨率
+                        <span class="badge bg-primary rounded-pill">400×300 像素</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        显示模式
+                        <span class="badge bg-secondary rounded-pill">黑白</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        刷新时间
+                        <span class="badge bg-info rounded-pill">约2-3秒</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-warning">使用提示</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light border-0">
+                    <ul class="mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>建议上传高对比度的图片，以获得更好的显示效果</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>图片内容应简洁明了，避免过多细节</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>文字内容应使用较大字号，确保可读性</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>上传后会自动处理为适合墨水屏显示的格式</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deviceSelect = document.getElementById('device_id');
+    const versionSelect = document.getElementById('version');
+    const imageInput = document.getElementById('image');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadArea = document.getElementById('uploadArea');
+    const removeImageBtn = document.getElementById('removeImage');
+    
+    // 拖拽上传功能
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('drag-over');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        if (e.dataTransfer.files.length) {
+            imageInput.files = e.dataTransfer.files;
+            showImagePreview(e.dataTransfer.files[0]);
+        }
+    });
+    
+    // 点击上传区域触发文件选择
+    uploadArea.addEventListener('click', function() {
+        imageInput.click();
+    });
+    
+    // 移除图片
+    removeImageBtn.addEventListener('click', function() {
+        imageInput.value = '';
+        imagePreview.style.display = 'none';
+    });
+    
+    // 设备选择变化时，加载该设备的内容版本
+    deviceSelect.addEventListener('change', function() {
+        const deviceId = this.value;
+        if (!deviceId) {
+            versionSelect.innerHTML = '<option value="">创建新版本</option>';
+            return;
+        }
+        
+        // 获取设备的内容版本
+        fetch(`/api/devices/${deviceId}/contents`)
+        .then(response => response.json())
+        .then(data => {
+            versionSelect.innerHTML = '<option value="">创建新版本</option>';
+            data.contents.forEach(content => {
+                const option = document.createElement('option');
+                option.value = content.version;
+                option.textContent = `v${content.version} - ${content.title}`;
+                versionSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            versionSelect.innerHTML = '<option value="">创建新版本</option>';
+        });
+    });
+    
+    // 图片选择变化时，显示预览
+    imageInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            showImagePreview(this.files[0]);
+        } else {
+            imagePreview.style.display = 'none';
+        }
+    });
+    
+    // 显示图片预览
+    function showImagePreview(file) {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    // 表单提交时，显示加载状态
+    uploadForm.addEventListener('submit', function(e) {
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>上传中...';
+    });
+});
+</script>
+{% endblock %}

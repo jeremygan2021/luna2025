@@ -1,0 +1,148 @@
+{% extends "admin/base.html" %}
+
+{% block title %}设备管理 - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-mobile-alt me-2"></i>设备管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-filter me-1"></i> 筛选
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" data-filter="all">全部设备</a></li>
+                <li><a class="dropdown-item" href="#" data-filter="online">在线设备</a></li>
+                <li><a class="dropdown-item" href="#" data-filter="offline">离线设备</a></li>
+                <li><a class="dropdown-item" href="#" data-filter="disabled">禁用设备</a></li>
+            </ul>
+        </div>
+        <a href="/admin/devices/add" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> 添加设备
+        </a>
+    </div>
+</div>
+
+{% if devices %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-primary">设备列表</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle table-sortable" data-sort-order="asc">
+                <thead>
+                    <tr>
+                        <th data-sort="device_id">设备ID <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="name">名称 <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="scene">场景 <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="status">状态 <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="last_online">最后上线 <i class="fas fa-sort text-muted"></i></th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for device in devices %}
+                    <tr data-status="{% if device.is_active %}{% if device.is_online %}online{% else %}offline{% endif %}{% else %}disabled{% endif %}">
+                        <td data-column="device_id">
+                            <a href="/admin/devices/{{ device.device_id }}" class="text-decoration-none fw-bold">
+                                {{ device.device_id }}
+                            </a>
+                        </td>
+                        <td data-column="name">{{ device.name }}</td>
+                        <td data-column="scene">
+                            <span class="badge bg-light text-dark">{{ device.scene }}</span>
+                        </td>
+                        <td data-column="status">
+                            {% if device.is_active %}
+                                {% if device.is_online %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>在线
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>离线
+                                </span>
+                                {% endif %}
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>禁用
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td data-column="last_online">
+                            {% if device.last_online %}
+                            <span title="{{ device.last_online.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                {{ device.last_online.strftime('%Y-%m-%d %H:%M') }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">从未</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="/admin/devices/{{ device.device_id }}" class="btn btn-outline-info" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="/admin/devices/{{ device.device_id }}/contents/add" class="btn btn-outline-success" title="添加内容">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                                <button class="btn btn-outline-primary" onclick="refreshDevice('{{ device.device_id }}')" title="刷新状态">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteDevice('{{ device.device_id }}')" title="删除设备">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card shadow-sm">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-mobile-alt fa-4x text-muted mb-4"></i>
+        <h5 class="card-title">暂无设备</h5>
+        <p class="card-text">您还没有添加任何设备。</p>
+        <a href="/admin/devices/add" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus me-2"></i> 添加第一个设备
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 设备筛选功能
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterButtons = document.querySelectorAll('[data-filter]');
+        const deviceRows = document.querySelectorAll('tbody tr');
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const filter = this.getAttribute('data-filter');
+                
+                // 更新按钮状态
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 筛选设备
+                deviceRows.forEach(row => {
+                    if (filter === 'all') {
+                        row.style.display = '';
+                    } else {
+                        const status = row.getAttribute('data-status');
+                        row.style.display = status === filter ? '' : 'none';
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends "admin/base.html" %}
+
+{% block title %}待办事项详情{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tasks me-2"></i>待办事项详情
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="/admin/todos{% if todo.device_id %}?device_id={{ todo.device_id }}{% endif %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>返回列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin">首页</a></li>
+        <li class="breadcrumb-item"><a href="/admin/todos{% if todo.device_id %}?device_id={{ todo.device_id }}{% endif %}">待办事项管理</a></li>
+        <li class="breadcrumb-item active">{{ todo.title }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i>待办事项信息
+                </h5>
+                <span class="badge {% if todo.is_completed %}bg-success{% else %}bg-warning{% %} fs-6">
+                    {% if todo.is_completed %}已完成{% else %}未完成{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">标题:</div>
+                    <div class="col-sm-9">{{ todo.title }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">描述:</div>
+                    <div class="col-sm-9">{{ todo.description or '无' }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">关联设备:</div>
+                    <div class="col-sm-9">
+                        <a href="/admin/devices/{{ device.device_id }}" class="text-decoration-none">
+                            {{ device.name or device.device_id }}
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">截止时间:</div>
+                    <div class="col-sm-9">
+                        {% if todo.due_date %}
+                            {{ todo.due_date.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            无
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">创建时间:</div>
+                    <div class="col-sm-9">{{ todo.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">更新时间:</div>
+                    <div class="col-sm-9">{{ todo.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                </div>
+                
+                {% if todo.is_completed and todo.completed_at %}
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">完成时间:</div>
+                    <div class="col-sm-9">{{ todo.completed_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <div class="btn-group">
+                    <a href="/admin/todos/{{ todo.id }}/edit" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i>编辑
+                    </a>
+                    <form method="post" action="/admin/todos/{{ todo.id }}/toggle" style="display: inline;">
+                        <button type="submit" class="btn {% if todo.is_completed %}btn-warning{% else %}btn-success{% %}">
+                            <i class="fas {% if todo.is_completed %}fa-undo{% else %}fa-check{% %} me-1"></i>
+                            {% if todo.is_completed %}标记为未完成{% else %}标记为已完成{% endif %}
+                        </button>
+                    </form>
+                    <form method="post" action="/admin/todos/{{ todo.id }}/delete" style="display: inline;" onsubmit="return confirm('确定要删除这个待办事项吗？');">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i>删除
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>设备信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">设备ID:</div>
+                    <div class="col-sm-8">{{ device.device_id }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">设备名称:</div>
+                    <div class="col-sm-8">{{ device.name or '未设置' }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">设备类型:</div>
+                    <div class="col-sm-8">{{ device.device_type or '未知' }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">状态:</div>
+                    <div class="col-sm-8">
+                        {% if device.status == 'online' %}
+                            <span class="badge bg-success">在线</span>
+                        {% else %}
+                            <span class="badge bg-danger">离线</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">最后活跃:</div>
+                    <div class="col-sm-8">
+                        {% if device.last_seen %}
+                            {{ device.last_seen.strftime('%Y-%m-%d %H:%M:%S') }}
+                        {% else %}
+                            未知
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="/admin/devices/{{ device.device_id }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-tv me-1"></i>查看设备详情
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

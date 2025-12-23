@@ -1,0 +1,236 @@
+{% extends "admin/base.html" %}
+
+{% block title %}内容管理 - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-file-alt me-2"></i>内容管理</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="/admin/contents/add" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> 添加内容
+            </a>
+            <a href="/admin/upload" class="btn btn-success">
+                <i class="fas fa-upload me-1"></i> 上传图片
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 设备筛选 -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">筛选条件</h6>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="device_id" class="form-label">按设备筛选</label>
+                        <select class="form-select" id="device_id" name="device_id" onchange="this.form.submit()">
+                            <option value="">所有设备</option>
+                            {% for device in devices %}
+                            <option value="{{ device.device_id }}" {% if filtered and device.device_id == device_id %}selected{% endif %}>
+                                {{ device.name }} ({{ device.device_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="content_type" class="form-label">内容类型</label>
+                        <select class="form-select" id="content_type" name="content_type" onchange="this.form.submit()">
+                            <option value="">全部类型</option>
+                            <option value="image" {% if content_type == 'image' %}selected{% endif %}>图片内容</option>
+                            <option value="text" {% if content_type == 'text' %}selected{% endif %}>文本内容</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">状态</label>
+                        <select class="form-select" id="status" name="status" onchange="this.form.submit()">
+                            <option value="">全部状态</option>
+                            <option value="active" {% if status == 'active' %}selected{% endif %}>活跃</option>
+                            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 内容列表 -->
+{% if content_list %}
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-primary">内容列表</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle table-sortable" data-sort-order="asc">
+                <thead>
+                    <tr>
+                        <th data-sort="device">设备 <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="title">标题 <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="version">版本 <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="type">类型 <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="status">状态 <i class="fas fa-sort text-muted"></i></th>
+                        <th data-sort="created_at">创建时间 <i class="fas fa-sort text-muted"></i></th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in content_list %}
+                    <tr>
+                        <td data-column="device">
+                            <a href="/admin/devices/{{ item.content.device_id }}" class="text-decoration-none">
+                                <i class="fas fa-mobile-alt me-1"></i>
+                                {{ item.device.name if item.device else item.content.device_id }}
+                            </a>
+                        </td>
+                        <td data-column="title">
+                            <a href="/admin/devices/{{ item.content.device_id }}/contents/{{ item.content.version }}" class="text-decoration-none fw-bold">
+                                {{ item.content.title }}
+                            </a>
+                        </td>
+                        <td data-column="version">
+                            <span class="badge bg-light text-dark">v{{ item.content.version }}</span>
+                        </td>
+                        <td data-column="type">
+                            {% if item.content.image_path %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-image me-1"></i>图片
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-font me-1"></i>文本
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td data-column="status">
+                            {% if item.content.is_active %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>活跃
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-times-circle me-1"></i>禁用
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td data-column="created_at">
+                            <span title="{{ item.content.created_at.strftime('%Y-%m-%d %H:%M:%S') }}">
+                                {{ item.content.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="/admin/devices/{{ item.content.device_id }}/contents/{{ item.content.version }}" class="btn btn-outline-info" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button class="btn btn-outline-success" onclick="pushContent('{{ item.content.device_id }}', {{ item.content.version }})" title="推送到设备">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="duplicateContent('{{ item.content.device_id }}', {{ item.content.version }})" title="复制内容">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteContent('{{ item.content.device_id }}', {{ item.content.version }})" title="删除内容">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card shadow-sm">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-file-alt fa-4x text-muted mb-4"></i>
+        <h5 class="card-title">暂无内容</h5>
+        <p class="card-text">
+            {% if filtered %}
+            该设备还没有任何内容。
+            <a href="/admin/contents/add?device_id={{ device_id }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i> 添加内容
+            </a>
+            {% else %}
+            系统中还没有任何内容。
+            <a href="/admin/contents/add" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i> 添加第一个内容
+            </a>
+            {% endif %}
+        </p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function pushContent(deviceId, version) {
+    if (confirm('确定要推送此内容到设备吗？')) {
+        fetch(`/api/devices/${deviceId}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                version: version
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('内容推送成功');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('内容推送失败');
+        });
+    }
+}
+
+function duplicateContent(deviceId, version) {
+    if (confirm('确定要复制此内容吗？')) {
+        fetch(`/api/devices/${deviceId}/contents/${version}/duplicate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('内容复制成功');
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('内容复制失败');
+        });
+    }
+}
+
+function deleteContent(deviceId, version) {
+    if (confirm('确定要删除此内容吗？此操作不可恢复！')) {
+        fetch(`/api/devices/${deviceId}/contents/${version}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert('内容删除成功');
+            window.location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('内容删除失败');
+        });
+    }
+}
+</script>
+{% endblock %}

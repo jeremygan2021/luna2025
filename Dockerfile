@@ -22,6 +22,6 @@ COPY --from=builder /app/dist ./dist
 # Copy server script
 COPY server.js .
 
-EXPOSE 3000
+EXPOSE 3031
 
 CMD ["node", "server.js"]
