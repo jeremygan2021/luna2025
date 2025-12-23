@@ -45,9 +45,9 @@ const NUS_RX_CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 const NUS_TX_CHARACTERISTIC_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 
 export const WifiConfigApp: React.FC<WifiConfigAppProps> = ({ onClose }) => {
-  const { t, language, toggleLanguage } = useLanguage();
+  const { t, toggleLanguage } = useLanguage();
   const [device, setDevice] = useState<BluetoothDevice | null>(null);
-  const [server, setServer] = useState<BluetoothRemoteGATTServer | null>(null);
+  const [, setServer] = useState<BluetoothRemoteGATTServer | null>(null);
   const [rxChar, setRxChar] = useState<BluetoothRemoteGATTCharacteristic | null>(null);
   const [status, setStatus] = useState<string>("readyToConnect");
   const [ssid, setSsid] = useState("");
