@@ -1,0 +1,141 @@
+{% extends "admin/base.html" %}
+
+{% block title %}添加歌曲 - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus me-2"></i>添加歌曲
+                </h5>
+                <a href="/admin/songs" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>返回列表
+                </a>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="device_id" class="form-label">选择设备 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="device_id" name="device_id" required>
+                            <option value="">请选择设备</option>
+                            {% for device in devices %}
+                            <option value="{{ device.device_id }}" 
+                                {% if selected_device == device.device_id %}selected{% endif %}>
+                                {{ device.name or device.device_id }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="song_id" class="form-label">歌曲ID <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="song_id" name="song_id" 
+                                       min="1" max="999" required>
+                                <div class="form-text">歌曲的唯一标识符 (1-999)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="tempo" class="form-label">节拍 <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="tempo" name="tempo" 
+                                       step="0.1" min="0.1" max="5.0" value="1.0" required>
+                                <div class="form-text">播放速度倍数 (0.1-5.0)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">歌曲名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               maxlength="200" required>
+                        <div class="form-text">歌曲的显示名称</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">音符数据 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="notes" name="notes" rows="10" required 
+                                  placeholder='[["C4", 100], ["D4", 100], ["E4", 100], ["REST", 200]]'></textarea>
+                        <div class="form-text">
+                            JSON格式的音符数组，每个音符包含音高和持续时间。
+                            <br>格式：[["音高", 持续时间], ...]
+                            <br>音高示例：C4, D4, E4, F4, G4, A4, B4, C5, REST（休止符）
+                        </div>
+                    </div>
+
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-lightbulb me-1"></i>示例音符数据
+                            </h6>
+                            <p class="card-text small mb-2">简单旋律示例：</p>
+                            <code class="d-block mb-2">[["C4", 300], ["D4", 300], ["E4", 300], ["F4", 300], ["G4", 600], ["REST", 300], ["G4", 600]]</code>
+                            
+                            <p class="card-text small mb-2 mt-3">复杂旋律示例：</p>
+                            <code class="d-block">[["E5", 100], ["E5", 100], ["REST", 100], ["E5", 100], ["REST", 100], ["C5", 100], ["E5", 100], ["REST", 100], ["G5", 100], ["REST", 300]]</code>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="/admin/songs" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>保存歌曲
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 验证JSON格式
+document.getElementById('notes').addEventListener('blur', function() {
+    const notesInput = this;
+    const value = notesInput.value.trim();
+    
+    if (value) {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                notesInput.classList.remove('is-invalid');
+                notesInput.classList.add('is-valid');
+            } else {
+                throw new Error('必须是数组格式');
+            }
+        } catch (e) {
+            notesInput.classList.remove('is-valid');
+            notesInput.classList.add('is-invalid');
+        }
+    }
+});
+
+// 格式化JSON
+document.getElementById('notes').addEventListener('paste', function(e) {
+    setTimeout(() => {
+        try {
+            const value = this.value.trim();
+            if (value) {
+                const parsed = JSON.parse(value);
+                this.value = JSON.stringify(parsed, null, 2);
+            }
+        } catch (e) {
+            // 忽略格式化错误
+        }
+    }, 100);
+});
+</script>
+{% endblock %}

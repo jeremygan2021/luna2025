@@ -2,6 +2,12 @@
 
 基于 FastAPI + MQTT + HTTP/HTTPS + NTP 的轻量级墨水屏显示系统服务端。
 
+## 迁移数据库
+迁移数据库脚本：
+```bash
+python manage.py db upgrade
+```
+
 ## 功能特点
 
 - 设备管理：维护设备信息、状态和绑定关系

@@ -41,6 +41,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if '/admin/songs' in request.url.path %}active{% endif %}" href="/admin/songs">
+                            <i class="fas fa-music me-1"></i>歌曲管理
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if '/admin/upload' in request.url.path %}active{% endif %}" href="/admin/upload">
                             <i class="fas fa-upload me-1"></i>图片上传
                         </a>

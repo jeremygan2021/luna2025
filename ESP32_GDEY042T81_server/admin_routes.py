@@ -11,12 +11,23 @@ from config import settings
 
 from database import get_db
 from models import Device as DeviceModel, Content as ContentModel, Todo as TodoModel
-from schemas import DeviceCreate, ContentCreate, TodoCreate, TodoUpdate
+from database import Song as SongModel
+from schemas import DeviceCreate, ContentCreate, TodoCreate, TodoUpdate, SongCreate
 from image_processor import image_processor
 from mqtt_manager import mqtt_manager
 
 # 创建模板对象
 templates = Jinja2Templates(directory="templates")
+
+# 添加自定义过滤器
+def from_json_filter(value):
+    """将JSON字符串转换为Python对象"""
+    try:
+        return json.loads(value) if value else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+templates.env.filters['from_json'] = from_json_filter
 
 # 创建管理后台路由
 admin_router = APIRouter()
@@ -101,6 +112,9 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     completed_todo_count = db.query(TodoModel).filter(TodoModel.is_completed == True).count()
     pending_todo_count = todo_count - completed_todo_count
     
+    # 获取歌曲数量
+    song_count = db.query(SongModel).count()
+    
     # 获取最近上线的设备
     recent_devices = db.query(DeviceModel).order_by(DeviceModel.last_online.desc()).limit(5).all()
     
@@ -112,6 +126,14 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     # 转换为包含todo和device的对象列表
     recent_todos = [{"todo": todo, "device": device} for todo, device in recent_todos_query]
     
+    # 获取最近创建的歌曲
+    recent_songs_query = db.query(SongModel, DeviceModel).join(
+        DeviceModel, SongModel.device_id == DeviceModel.device_id
+    ).order_by(SongModel.created_at.desc()).limit(5).all()
+    
+    # 转换为包含song和device的对象列表
+    recent_songs = [{"song": song, "device": device} for song, device in recent_songs_query]
+    
     return templates.TemplateResponse("admin/dashboard.html", {
         "request": request,
         "device_count": device_count,
@@ -120,8 +142,10 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         "todo_count": todo_count,
         "completed_todo_count": completed_todo_count,
         "pending_todo_count": pending_todo_count,
+        "song_count": song_count,
         "recent_devices": recent_devices,
-        "recent_todos": recent_todos
+        "recent_todos": recent_todos,
+        "recent_songs": recent_songs
     })
 
 @admin_router.get("/devices", response_class=HTMLResponse)
@@ -675,3 +699,308 @@ async def delete_todo(
     db.commit()
     
     return RedirectResponse(url=f"/admin/todos?device_id={device_id}", status_code=303)
+
+# 歌曲管理路由
+@admin_router.get("/songs", response_class=HTMLResponse)
+async def songs_list(request: Request, device_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    歌曲列表页面
+    """
+    if device_id:
+        # 获取特定设备的歌曲
+        device = db.query(DeviceModel).filter(DeviceModel.device_id == device_id).first()
+        if not device:
+            raise HTTPException(status_code=404, detail="设备不存在")
+        
+        songs = db.query(SongModel).filter(SongModel.device_id == device_id).order_by(SongModel.created_at.desc()).all()
+        return templates.TemplateResponse("admin/songs.html", {
+            "request": request,
+            "songs": songs,
+            "device": device,
+            "filtered": True
+        })
+    else:
+        # 获取所有歌曲
+        songs = db.query(SongModel).order_by(SongModel.created_at.desc()).all()
+        devices = db.query(DeviceModel).all()
+        
+        # 为每个歌曲添加设备信息
+        song_list = []
+        for song in songs:
+            device = db.query(DeviceModel).filter(DeviceModel.device_id == song.device_id).first()
+            song_list.append({
+                "song": song,
+                "device": device
+            })
+        
+        return templates.TemplateResponse("admin/songs.html", {
+            "request": request,
+            "song_list": song_list,
+            "devices": devices,
+            "filtered": False
+        })
+
+@admin_router.get("/songs/add", response_class=HTMLResponse)
+@admin_router.post("/songs/add", response_class=HTMLResponse)
+async def add_song(request: Request, device_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    添加歌曲页面和处理
+    """
+    if request.method == "GET":
+        devices = db.query(DeviceModel).filter(DeviceModel.is_active == True).all()
+        return templates.TemplateResponse("admin/song_add.html", {
+            "request": request,
+            "devices": devices,
+            "selected_device": device_id
+        })
+    
+    # 处理POST请求
+    form = await request.form()
+    device_id = form.get("device_id")
+    song_id = form.get("song_id")
+    name = form.get("name")
+    tempo = form.get("tempo")
+    notes_json = form.get("notes")
+    
+    # 检查设备是否存在
+    device = db.query(DeviceModel).filter(DeviceModel.device_id == device_id).first()
+    if not device:
+        devices = db.query(DeviceModel).filter(DeviceModel.is_active == True).all()
+        return templates.TemplateResponse("admin/song_add.html", {
+            "request": request,
+            "devices": devices,
+            "error": "设备不存在"
+        })
+    
+    # 检查歌曲ID是否已存在
+    existing_song = db.query(SongModel).filter(
+        SongModel.device_id == device_id,
+        SongModel.song_id == int(song_id)
+    ).first()
+    if existing_song:
+        devices = db.query(DeviceModel).filter(DeviceModel.is_active == True).all()
+        return templates.TemplateResponse("admin/song_add.html", {
+            "request": request,
+            "devices": devices,
+            "error": "歌曲ID已存在"
+        })
+    
+    try:
+        # 解析音符数据
+        notes = json.loads(notes_json)
+        
+        # 创建新歌曲
+        new_song = SongModel(
+            device_id=device_id,
+            song_id=int(song_id),
+            name=name,
+            tempo=str(tempo),
+            notes=notes_json
+        )
+        
+        db.add(new_song)
+        db.commit()
+        
+        return RedirectResponse(url="/admin/songs", status_code=303)
+        
+    except json.JSONDecodeError:
+        devices = db.query(DeviceModel).filter(DeviceModel.is_active == True).all()
+        return templates.TemplateResponse("admin/song_add.html", {
+            "request": request,
+            "devices": devices,
+            "error": "音符数据格式不正确，请输入有效的JSON格式"
+        })
+    except ValueError:
+        devices = db.query(DeviceModel).filter(DeviceModel.is_active == True).all()
+        return templates.TemplateResponse("admin/song_add.html", {
+            "request": request,
+            "devices": devices,
+            "error": "歌曲ID或节拍必须是数字"
+        })
+
+@admin_router.get("/songs/{song_id}", response_class=HTMLResponse)
+async def song_detail(request: Request, song_id: int, db: Session = Depends(get_db)):
+    """
+    歌曲详情页面
+    """
+    song = db.query(SongModel).filter(SongModel.id == song_id).first()
+    if not song:
+        raise HTTPException(status_code=404, detail="歌曲不存在")
+    
+    # 获取设备信息
+    device = db.query(DeviceModel).filter(DeviceModel.device_id == song.device_id).first()
+    
+    # 解析音符数据
+    notes = []
+    try:
+        notes = json.loads(song.notes)
+    except json.JSONDecodeError:
+        notes = []
+    
+    return templates.TemplateResponse("admin/song_detail.html", {
+        "request": request,
+        "song": song,
+        "device": device,
+        "notes": notes
+    })
+
+@admin_router.get("/songs/{song_id}/edit", response_class=HTMLResponse)
+async def edit_song_page(request: Request, song_id: int, db: Session = Depends(get_db)):
+    """
+    编辑歌曲页面
+    """
+    song = db.query(SongModel).filter(SongModel.id == song_id).first()
+    if not song:
+        raise HTTPException(status_code=404, detail="歌曲不存在")
+    
+    devices = db.query(DeviceModel).all()
+    
+    return templates.TemplateResponse("admin/song_edit.html", {
+        "request": request,
+        "song": song,
+        "devices": devices
+    })
+
+@admin_router.post("/songs/{song_id}/edit")
+async def edit_song(
+    request: Request,
+    song_id: int,
+    device_id: str = Form(...),
+    song_number: int = Form(...),
+    name: str = Form(...),
+    tempo: float = Form(...),
+    notes: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    处理歌曲编辑
+    """
+    song = db.query(SongModel).filter(SongModel.id == song_id).first()
+    if not song:
+        raise HTTPException(status_code=404, detail="歌曲不存在")
+    
+    device = db.query(DeviceModel).filter(DeviceModel.device_id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="设备不存在")
+    
+    try:
+        # 验证JSON格式
+        json.loads(notes)
+        
+        # 检查歌曲ID冲突（如果改变了歌曲ID）
+        if song.song_id != song_number:
+            existing_song = db.query(SongModel).filter(
+                SongModel.device_id == device_id,
+                SongModel.song_id == song_number,
+                SongModel.id != song_id
+            ).first()
+            if existing_song:
+                devices = db.query(DeviceModel).all()
+                return templates.TemplateResponse("admin/song_edit.html", {
+                    "request": request,
+                    "song": song,
+                    "devices": devices,
+                    "error": "歌曲ID已存在"
+                })
+        
+        # 更新歌曲
+        song.device_id = device_id
+        song.song_id = song_number
+        song.name = name
+        song.tempo = str(tempo)
+        song.notes = notes
+        song.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return RedirectResponse(url=f"/admin/songs/{song_id}", status_code=303)
+        
+    except json.JSONDecodeError:
+        devices = db.query(DeviceModel).all()
+        return templates.TemplateResponse("admin/song_edit.html", {
+            "request": request,
+            "song": song,
+            "devices": devices,
+            "error": "音符数据格式不正确，请输入有效的JSON格式"
+        })
+
+@admin_router.post("/songs/{song_id}/delete")
+async def delete_song(
+    request: Request,
+    song_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    删除歌曲
+    """
+    song = db.query(SongModel).filter(SongModel.id == song_id).first()
+    if not song:
+        raise HTTPException(status_code=404, detail="歌曲不存在")
+    
+    device_id = song.device_id
+    
+    db.delete(song)
+    db.commit()
+    
+    return RedirectResponse(url=f"/admin/songs?device_id={device_id}", status_code=303)
+
+@admin_router.post("/songs/batch", response_class=HTMLResponse)
+async def create_batch_songs(request: Request, db: Session = Depends(get_db)):
+    """
+    批量创建预定义歌曲
+    """
+    form = await request.form()
+    device_id = form.get("device_id")
+    
+    # 检查设备是否存在
+    device = db.query(DeviceModel).filter(DeviceModel.device_id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="设备不存在")
+    
+    # 预定义歌曲数据
+    SONGS_EXT = {
+        1: {
+            "name": "Super Mario Theme",
+            "tempo": 1.2,
+            "notes": [['E5', 100], ['E5', 100], ['REST', 100], ['E5', 100],
+                     ['REST', 100], ['C5', 100], ['E5', 100], ['REST', 100],
+                     ['G5', 100], ['REST', 300], ['G4', 100], ['REST', 300],
+                     ['C5', 150], ['REST', 50], ['G4', 150], ['REST', 150],
+                     ['E4', 150], ['REST', 100], ['A4', 100], ['B4', 100],
+                     ['AS4', 50], ['A4', 100], ['G4', 100], ['E5', 100], ['G5', 100],
+                     ['A5', 100], ['F5', 100], ['G5', 100], ['REST', 50],
+                     ['E5', 100], ['C5', 100], ['D5', 100], ['B4', 100]]
+        },
+        2: {
+            "name": "Star Wars - Imperial March",
+            "tempo": 1.0,
+            "notes": [['A3', 500], ['A3', 500], ['A3', 500], ['F3', 350], ['C4', 150],
+                     ['A3', 500], ['F3', 350], ['C4', 150], ['A3', 1000],
+                     ['E4', 500], ['E4', 500], ['E4', 500], ['F4', 350], ['C4', 150],
+                     ['GS3', 500], ['F3', 350], ['C4', 150], ['A3', 1000]]
+        }
+    }
+    
+    created_count = 0
+    for song_id, song_data in SONGS_EXT.items():
+        # 检查歌曲是否已存在
+        existing_song = db.query(SongModel).filter(
+            SongModel.device_id == device_id,
+            SongModel.song_id == song_id
+        ).first()
+        
+        if not existing_song:
+            # 创建新歌曲
+            new_song = SongModel(
+                device_id=device_id,
+                song_id=song_id,
+                name=song_data["name"],
+                tempo=str(song_data["tempo"]),
+                notes=json.dumps(song_data["notes"])
+            )
+            db.add(new_song)
+            created_count += 1
+    
+    db.commit()
+    
+    return RedirectResponse(url=f"/admin/songs?device_id={device_id}", status_code=303)

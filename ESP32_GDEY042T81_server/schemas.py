@@ -113,3 +113,27 @@ class Todo(TodoBase):
     
     class Config:
         from_attributes = True
+
+# 歌曲相关模型
+class SongBase(BaseModel):
+    song_id: int = Field(..., description="歌曲ID")
+    name: str = Field(..., description="歌曲名称")
+    tempo: float = Field(..., description="节拍")
+    notes: list = Field(..., description="音符数据")
+
+class SongCreate(SongBase):
+    pass
+
+class SongUpdate(BaseModel):
+    name: Optional[str] = None
+    tempo: Optional[float] = None
+    notes: Optional[list] = None
+
+class Song(SongBase):
+    id: int
+    device_id: str
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True

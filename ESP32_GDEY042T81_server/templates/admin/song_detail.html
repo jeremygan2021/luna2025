@@ -1,0 +1,228 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ song.name }} - 歌曲详情 - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-music me-2"></i>{{ song.name }}
+                </h5>
+                <div>
+                    <a href="/admin/songs/{{ song.id }}/edit" class="btn btn-warning btn-sm">
+                        <i class="fas fa-edit me-1"></i>编辑
+                    </a>
+                    <a href="/admin/songs?device_id={{ song.device_id }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>返回列表
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>基本信息</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>歌曲ID:</strong></td>
+                                <td><span class="badge bg-primary">{{ song.song_id }}</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>歌曲名称:</strong></td>
+                                <td>{{ song.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>节拍:</strong></td>
+                                <td>{{ song.tempo }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>音符数量:</strong></td>
+                                <td>{{ notes | length }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>设备信息</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>设备ID:</strong></td>
+                                <td>
+                                    <a href="/admin/devices/{{ device.device_id }}" class="text-decoration-none">
+                                        {{ device.device_id }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>设备名称:</strong></td>
+                                <td>{{ device.name or '未设置' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>场景:</strong></td>
+                                <td>{{ device.scene or '未设置' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>设备状态:</strong></td>
+                                <td>
+                                    {% if device.is_active %}
+                                    <span class="badge bg-success">活跃</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">非活跃</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h6>时间信息</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">创建时间:</small>
+                            <div>{{ song.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">更新时间:</small>
+                            <div>{{ song.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h6>音符数据</h6>
+                    {% if notes %}
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th width="10%">序号</th>
+                                    <th width="30%">音高</th>
+                                    <th width="30%">持续时间 (ms)</th>
+                                    <th width="30%">类型</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for note in notes %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        {% if note[0] == 'REST' %}
+                                        <span class="badge bg-secondary">{{ note[0] }}</span>
+                                        {% else %}
+                                        <span class="badge bg-info">{{ note[0] }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ note[1] }}</td>
+                                    <td>
+                                        {% if note[0] == 'REST' %}
+                                        <small class="text-muted">休止符</small>
+                                        {% else %}
+                                        <small class="text-muted">音符</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        音符数据格式错误或为空
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <h6>原始JSON数据</h6>
+                    <pre class="bg-light p-3 rounded"><code>{{ song.notes }}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-cogs me-1"></i>操作
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/admin/songs/{{ song.id }}/edit" class="btn btn-warning">
+                        <i class="fas fa-edit me-1"></i>编辑歌曲
+                    </a>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                        <i class="fas fa-trash me-1"></i>删除歌曲
+                    </button>
+                    <hr>
+                    <a href="/admin/songs?device_id={{ song.device_id }}" class="btn btn-outline-primary">
+                        <i class="fas fa-list me-1"></i>该设备的所有歌曲
+                    </a>
+                    <a href="/admin/devices/{{ device.device_id }}" class="btn btn-outline-info">
+                        <i class="fas fa-mobile-alt me-1"></i>查看设备详情
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-1"></i>音符说明
+                </h6>
+            </div>
+            <div class="card-body">
+                <small>
+                    <strong>音高格式:</strong><br>
+                    • C4, D4, E4, F4, G4, A4, B4 (第4八度)<br>
+                    • C5, D5, E5, F5, G5, A5, B5 (第5八度)<br>
+                    • REST (休止符)<br><br>
+                    
+                    <strong>持续时间:</strong><br>
+                    • 以毫秒为单位<br>
+                    • 100ms = 0.1秒<br>
+                    • 1000ms = 1秒<br><br>
+                    
+                    <strong>节拍:</strong><br>
+                    • 1.0 = 正常速度<br>
+                    • 2.0 = 2倍速度<br>
+                    • 0.5 = 半速播放
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除歌曲 "<strong>{{ song.name }}</strong>" 吗？</p>
+                <p class="text-danger">此操作不可恢复！</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form method="post" action="/admin/songs/{{ song.id }}/delete" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">确认删除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete() {
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}""

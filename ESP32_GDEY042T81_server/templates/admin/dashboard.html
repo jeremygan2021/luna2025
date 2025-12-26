@@ -143,6 +143,31 @@
             </div>
         </div>
     </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card card-stats bg-purple text-white shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-5">
+                        <div class="icon-big text-center">
+                            <i class="fas fa-music"></i>
+                        </div>
+                    </div>
+                    <div class="col-7">
+                        <div class="numbers">
+                            <p class="card-category">歌曲总数</p>
+                            <h3 class="card-title">{{ song_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="stats">
+                    <i class="fas fa-headphones"></i> 音乐库
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -251,6 +276,103 @@
     </div>
 </div>
 
+<div class="row">
+    <!-- 最近歌曲 -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-music me-2"></i>最近添加的歌曲
+                </h6>
+                <a href="/admin/songs" class="btn btn-sm btn-primary">
+                    <i class="fas fa-list me-1"></i>查看全部
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_songs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="fas fa-music me-1"></i>歌曲名称</th>
+                                <th><i class="fas fa-mobile-alt me-1"></i>设备</th>
+                                <th><i class="fas fa-tachometer-alt me-1"></i>节拍</th>
+                                <th><i class="fas fa-calendar me-1"></i>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in recent_songs %}
+                            {% set song = item.song %}
+                            {% set device = item.device %}
+                            <tr>
+                                <td>
+                                    <a href="/admin/songs/{{ song.id }}" class="text-decoration-none">
+                                        <span class="badge bg-info me-1">{{ song.song_id }}</span>
+                                        {{ song.name }}
+                                    </a>
+                                </td>
+                                <td><a href="/admin/devices/{{ device.device_id }}" class="text-decoration-none">{{ device.name or device.device_id }}</a></td>
+                                <td>{{ song.tempo }}</td>
+                                <td>{{ song.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-music fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">暂无歌曲</p>
+                    <a href="/admin/songs/add" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>添加第一首歌曲
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统概览 -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-pie me-2"></i>系统概览
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="border-end">
+                            <h4 class="text-primary">{{ device_count }}</h4>
+                            <small class="text-muted">总设备数</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h4 class="text-success">{{ active_device_count }}</h4>
+                        <small class="text-muted">活跃设备</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="border-end">
+                            <h4 class="text-info">{{ content_count }}</h4>
+                            <small class="text-muted">内容数量</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h4 class="text-warning">{{ todo_count }}</h4>
+                        <small class="text-muted">待办事项</small>
+                    </div>
+                    <div class="col-12">
+                        <hr>
+                        <h4 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ song_count }}</h4>
+                        <small class="text-muted">歌曲库</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 快捷操作 -->
 <div class="row">
     <div class="col-12">
@@ -262,23 +384,33 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <a href="/admin/devices/add" class="btn btn-primary btn-lg btn-block">
+                    <div class="col-md-2 mb-3">
+                        <a href="/admin/devices/add" class="btn btn-primary btn-lg btn-block w-100">
                             <i class="fas fa-plus me-2"></i> 添加设备
                         </a>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="/admin/contents/add" class="btn btn-info btn-lg btn-block">
+                    <div class="col-md-2 mb-3">
+                        <a href="/admin/contents/add" class="btn btn-info btn-lg btn-block w-100">
                             <i class="fas fa-plus me-2"></i> 添加内容
                         </a>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="/admin/todos/add" class="btn btn-warning btn-lg btn-block">
+                    <div class="col-md-2 mb-3">
+                        <a href="/admin/todos/add" class="btn btn-warning btn-lg btn-block w-100">
                             <i class="fas fa-plus me-2"></i> 添加待办
                         </a>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="/admin/todos" class="btn btn-success btn-lg btn-block">
+                    <div class="col-md-2 mb-3">
+                        <a href="/admin/songs/add" class="btn btn-lg btn-block w-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white;">
+                            <i class="fas fa-plus me-2"></i> 添加歌曲
+                        </a>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <a href="/admin/songs" class="btn btn-outline-primary btn-lg btn-block w-100">
+                            <i class="fas fa-music me-2"></i> 歌曲管理
+                        </a>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <a href="/admin/todos" class="btn btn-success btn-lg btn-block w-100">
                             <i class="fas fa-tasks me-2"></i> 待办管理
                         </a>
                     </div>

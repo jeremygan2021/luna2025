@@ -1,0 +1,226 @@
+{% extends "admin/base.html" %}
+
+{% block title %}编辑歌曲 - {{ song.name }} - 墨水屏管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>编辑歌曲 - {{ song.name }}
+                </h5>
+                <a href="/admin/songs/{{ song.id }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>返回详情
+                </a>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="device_id" class="form-label">选择设备 <span class="text-danger">*</span></label>
+                        <select class="form-select" id="device_id" name="device_id" required>
+                            {% for device in devices %}
+                            <option value="{{ device.device_id }}" 
+                                {% if song.device_id == device.device_id %}selected{% endif %}>
+                                {{ device.name or device.device_id }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="song_number" class="form-label">歌曲ID <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="song_number" name="song_number" 
+                                       min="1" max="999" value="{{ song.song_id }}" required>
+                                <div class="form-text">歌曲的唯一标识符 (1-999)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="tempo" class="form-label">节拍 <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="tempo" name="tempo" 
+                                       step="0.1" min="0.1" max="5.0" value="{{ song.tempo }}" required>
+                                <div class="form-text">播放速度倍数 (0.1-5.0)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label">歌曲名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               maxlength="200" value="{{ song.name }}" required>
+                        <div class="form-text">歌曲的显示名称</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">音符数据 <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="notes" name="notes" rows="15" required>{{ song.notes }}</textarea>
+                        <div class="form-text">
+                            JSON格式的音符数组，每个音符包含音高和持续时间。
+                            <br>格式：[["音高", 持续时间], ...]
+                            <br>音高示例：C4, D4, E4, F4, G4, A4, B4, C5, REST（休止符）
+                        </div>
+                    </div>
+
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <i class="fas fa-tools me-1"></i>JSON格式化工具
+                            </h6>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="formatJSON()">
+                                    <i class="fas fa-code me-1"></i>格式化JSON
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="compactJSON()">
+                                    <i class="fas fa-compress me-1"></i>压缩JSON
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm" onclick="validateJSON()">
+                                    <i class="fas fa-check me-1"></i>验证格式
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="/admin/songs/{{ song.id }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>保存更改
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const notesTextarea = document.getElementById('notes');
+
+// 格式化JSON
+function formatJSON() {
+    try {
+        const value = notesTextarea.value.trim();
+        if (value) {
+            const parsed = JSON.parse(value);
+            notesTextarea.value = JSON.stringify(parsed, null, 2);
+            showMessage('JSON格式化成功', 'success');
+        }
+    } catch (e) {
+        showMessage('JSON格式错误: ' + e.message, 'danger');
+    }
+}
+
+// 压缩JSON
+function compactJSON() {
+    try {
+        const value = notesTextarea.value.trim();
+        if (value) {
+            const parsed = JSON.parse(value);
+            notesTextarea.value = JSON.stringify(parsed);
+            showMessage('JSON压缩成功', 'success');
+        }
+    } catch (e) {
+        showMessage('JSON格式错误: ' + e.message, 'danger');
+    }
+}
+
+// 验证JSON
+function validateJSON() {
+    try {
+        const value = notesTextarea.value.trim();
+        if (value) {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                let noteCount = 0;
+                let restCount = 0;
+                for (let note of parsed) {
+                    if (Array.isArray(note) && note.length === 2) {
+                        if (note[0] === 'REST') {
+                            restCount++;
+                        } else {
+                            noteCount++;
+                        }
+                    } else {
+                        throw new Error('每个音符必须是包含2个元素的数组');
+                    }
+                }
+                showMessage(`JSON格式正确！包含 ${noteCount} 个音符和 ${restCount} 个休止符`, 'success');
+            } else {
+                throw new Error('根元素必须是数组');
+            }
+        }
+    } catch (e) {
+        showMessage('JSON格式错误: ' + e.message, 'danger');
+    }
+}
+
+// 显示消息
+function showMessage(message, type) {
+    // 移除现有的消息
+    const existingAlert = document.querySelector('.json-message');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    // 创建新消息
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} json-message mt-2`;
+    alert.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-1"></i>${message}`;
+    
+    // 插入到textarea后面
+    notesTextarea.parentNode.insertBefore(alert, notesTextarea.nextSibling);
+    
+    // 3秒后自动移除
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 3000);
+}
+
+// 实时验证
+notesTextarea.addEventListener('blur', function() {
+    const value = this.value.trim();
+    
+    if (value) {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                throw new Error('必须是数组格式');
+            }
+        } catch (e) {
+            this.classList.remove('is-valid');
+            this.classList.add('is-invalid');
+        }
+    }
+});
+
+// 初始格式化
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const value = notesTextarea.value.trim();
+        if (value) {
+            const parsed = JSON.parse(value);
+            notesTextarea.value = JSON.stringify(parsed, null, 2);
+        }
+    } catch (e) {
+        // 忽略初始格式化错误
+    }
+});
+</script>
+{% endblock %}""
